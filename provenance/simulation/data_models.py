@@ -97,6 +97,7 @@ class Simulation(Computation):
         return cls(
             id=client.uuid_from_uri(simulation_object.id),
             type=cls.__fields__["type"].type_.__args__[0],
+            description=simulation_object.description,
             input=inputs,
             output=[File.from_kg_object(obj, client) for obj in as_list(simulation_object.outputs)],
             environment=ComputationalEnvironment.from_kg_object(simulation_object.environment, client),

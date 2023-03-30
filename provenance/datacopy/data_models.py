@@ -73,6 +73,7 @@ class DataCopy(Computation):
         return cls(
             id=client.uuid_from_uri(obj.id),  # just obj.uuid, no?
             type=cls.__fields__["type"].type_.__args__[0],  # "data analysis"
+            description=data_copy_object.description,
             input=inputs,
             output=[File.from_kg_object(outp, client) for outp in as_list(obj.outputs)],
             environment=ComputationalEnvironment.from_kg_object(obj.environment, client),
