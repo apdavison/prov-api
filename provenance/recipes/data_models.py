@@ -35,19 +35,21 @@ content_type_lookup = {
 
 class WorkflowRecipe(BaseModel):
     id: UUID = None
-    name: str = None
     alias: str = None
     custodians: List[Person] = None
     description: str = None
     developers: List[Person] = None
-    type: WorkflowRecipeType = None   # temporarily allow None
     full_documentation: AnyHttpUrl = None
     homepage: AnyHttpUrl = None
     keywords: List[str] = None
-    location: AnyUrl = None  # temporarily allow None, but really this should always be present
+    location: AnyUrl = (
+        None  # temporarily allow None, but really this should always be present
+    )
+    name: str = None
+    project_id: str
+    type: WorkflowRecipeType = None  # temporarily allow None
     version_identifier: str
     version_innovation: str = None
-    project_id: str
 
     @classmethod
     def from_kg_object(cls, recipe_version, client):

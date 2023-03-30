@@ -54,14 +54,14 @@ class WorkflowExecution(BaseModel):
 
     id: UUID = None
     configuration: dict = None
+    project_id: str = None
+    recipe_id: UUID = None
     stages: List[_Computation] = Field(
         ...,
         description="A workflow record is specified by the list of computations that were carried out. "
                     "The sequence of computations is inferred from the inputs, outputs and start times of each stage."
     )
     started_by: Person = None
-    recipe_id: UUID = None
-    project_id: str = None
 
 
     @classmethod
