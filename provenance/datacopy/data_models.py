@@ -25,7 +25,7 @@ from typing import Literal, List, Union
 
 from pydantic import Field
 
-from fairgraph.base import KGProxy
+from fairgraph import KGProxy
 from fairgraph.utility import as_list
 
 import fairgraph.openminds.computation as omcmp

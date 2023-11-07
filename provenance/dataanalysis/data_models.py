@@ -22,7 +22,7 @@ docstring goes here
 import logging
 from uuid import UUID, uuid4
 from typing import Literal
-from fairgraph.base import KGProxy
+from fairgraph import KGProxy
 from fairgraph.utility import as_list
 
 import fairgraph.openminds.computation as omcmp

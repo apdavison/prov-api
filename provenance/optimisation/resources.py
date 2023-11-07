@@ -30,7 +30,7 @@ from pydantic import ValidationError
 
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.computation as omcmp
-from fairgraph.base import as_list
+from fairgraph.utility import as_list
 
 from ..common.data_models import HardwareSystem, Status, ACTION_STATUS_TYPES
 from .data_models import Optimisation, OptimisationPatch

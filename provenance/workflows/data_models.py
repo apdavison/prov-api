@@ -25,7 +25,7 @@ from typing_extensions import Annotated
 import json
 from pydantic import BaseModel, Field
 
-from fairgraph.base import KGProxy
+from fairgraph import KGProxy
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.computation as omcmp
 from ..common.data_models import Person

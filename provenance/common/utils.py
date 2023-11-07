@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 
 import fairgraph.openminds.computation as omcmp
 import fairgraph.errors
-from fairgraph.base import as_list
+from fairgraph.utility import as_list
 
 from ..auth.utils import get_kg_client_for_user_account, is_collab_admin
 

@@ -5,13 +5,21 @@ from enum import Enum
 from uuid import UUID
 from pydantic import AnyHttpUrl, AnyUrl, BaseModel, Field
 
-from fairgraph.base import as_list, IRI
+from fairgraph.utility import as_list
+from fairgraph import IRI
+from fairgraph.queries import QueryProperty, Query, Filter
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.controlledterms as omterms
 import fairgraph.openminds.computation as omcmp
-from ..common.data_models import (Person, get_repository_host, get_repository_iri,
-                                  get_repository_name, get_repository_type)
+from ..common.data_models import (
+    Person,
+    get_repository_host,
+    get_repository_iri,
+    get_repository_name,
+    get_repository_type,
+)
 from ..common.utils import invert_dict, collab_id_from_space
+
 
 
 class WorkflowRecipeType(str, Enum):
@@ -53,25 +61,34 @@ class WorkflowRecipe(BaseModel):
 
     @classmethod
     def from_kg_object(cls, recipe_version, client):
-        recipe = omcmp.WorkflowRecipe.list(client, scope="any",
-                                           #space=recipe_version.space,
-                                           versions=recipe_version)[0]
+        recipe = omcmp.WorkflowRecipe.list(
+            client,
+            scope="any",
+            # space=recipe_version.space,
+            versions=recipe_version,
+        )[0]
         if recipe_version.custodians:
-            custodians = [Person.from_kg_object(p, client)
-                          for p in as_list(recipe_version.custodians)]  # todo: could be Organization
+            custodians = [
+                Person.from_kg_object(p, client)
+                for p in as_list(recipe_version.custodians)
+            ]  # todo: could be Organization
         else:
-            custodians = [Person.from_kg_object(p, client)
-                          for p in as_list(recipe.custodians)]
+            custodians = [
+                Person.from_kg_object(p, client) for p in as_list(recipe.custodians)
+            ]
         if recipe_version.developers:
-            developers = [Person.from_kg_object(p, client)
-                          for p in as_list(recipe_version.developers)]
+            developers = [
+                Person.from_kg_object(p, client)
+                for p in as_list(recipe_version.developers)
+            ]
         else:
-            developers = [Person.from_kg_object(p, client)
-                          for p in as_list(recipe.developers)]
+            developers = [
+                Person.from_kg_object(p, client) for p in as_list(recipe.developers)
+            ]
         if recipe_version.format:
             type_ = content_type_lookup.get(
-                recipe_version.format.resolve(client, scope="any").name,
-                None)
+                recipe_version.format.resolve(client, scope="any").name, None
+            )
         else:
             type_ = None
         if recipe_version.homepage:
@@ -95,7 +112,7 @@ class WorkflowRecipe(BaseModel):
             type=type_,
             full_documentation=recipe_version.full_documentation,
             homepage=homepage,
-            #keywords=as_list(recipe_version.keywords),  # todo: resolve keyword objects
+            # keywords=as_list(recipe_version.keywords),  # todo: resolve keyword objects
             location=location,
             version_identifier=recipe_version.version_identifier,
             version_innovation=recipe_version.version_innovation,
@@ -111,34 +128,34 @@ class WorkflowRecipe(BaseModel):
         return omcmp.WorkflowRecipeVersion(
             name=self.name,
             alias=self.alias,
-            #accessibility',
-            #copyright',
+            # accessibility',
+            # copyright',
             custodians=[p.to_kg_object(client) for p in self.custodians],
             description=self.description,
             developers=[p.to_kg_object(client) for p in self.developers],
-            #digital_identifier',
+            # digital_identifier',
             format=format,
             full_documentation=self.full_documentation,
-            #funding',
-            #has_components',
+            # funding',
+            # has_components',
             homepage=IRI(str(self.homepage)),
-            #how_to_cite',
-            #is_alternative_version_of',
-            #is_new_version_of',
+            # how_to_cite',
+            # is_alternative_version_of',
+            # is_new_version_of',
             keywords=self.keywords,
-            #licenses',
-            #other_contributions',
-            #related_publications',
-            #release_date',
+            # licenses',
+            # other_contributions',
+            # related_publications',
+            # release_date',
             repository=omcore.FileRepository(
                 name=get_repository_name(self.location),
                 iri=get_repository_iri(self.location),
                 hosted_by=get_repository_host(self.location),
                 type=get_repository_type(self.location),
             ),
-            #support_channels',
+            # support_channels',
             version_identifier=self.version_identifier,
-            version_innovation=self.version_innovation
+            version_innovation=self.version_innovation,
         )
 
 
@@ -148,7 +165,9 @@ class WorkflowRecipePatch(BaseModel):
     custodians: List[Person] = None
     description: str = None
     developers: List[Person] = None
-    type: WorkflowRecipeType = None   # temporarily allow none, until new content types added
+    type: WorkflowRecipeType = (
+        None  # temporarily allow none, until new content types added
+    )
     full_documentation: AnyHttpUrl = None
     homepage: AnyHttpUrl = None
     keywords: List[str] = None

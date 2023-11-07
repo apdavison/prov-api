@@ -27,7 +27,7 @@ from fastapi import APIRouter, Depends, Header, Query, HTTPException, status as 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import ValidationError
 
-from fairgraph.base import as_list
+from fairgraph.utility import as_list
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.computation as omcmp
 

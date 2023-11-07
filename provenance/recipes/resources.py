@@ -22,7 +22,7 @@ from typing import List
 from uuid import UUID, uuid4
 import logging
 
-from fairgraph.base import as_list
+from fairgraph.utility import as_list
 import fairgraph.openminds.computation as omcmp
 import fairgraph.errors
 

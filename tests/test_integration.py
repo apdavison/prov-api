@@ -12,7 +12,8 @@ from fairgraph.client import KGClient
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.controlledterms as omterms
 import fairgraph.openminds.computation as omcmp
-from fairgraph.base import IRI, as_list
+from fairgraph import IRI
+from fairgraph.utility import as_list
 
 sys.path.append(".")  # run tests in root directory of project
 from provenance.main import app

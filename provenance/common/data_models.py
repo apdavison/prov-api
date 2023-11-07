@@ -35,7 +35,8 @@ from decimal import Decimal
 from datetime import datetime
 from pydantic import BaseModel, AnyUrl, Field, Json
 
-from fairgraph.base import KGProxy as KGProxy, IRI, as_list
+from fairgraph import KGProxy, IRI
+from fairgraph.utility import as_list
 #from fairgraph.openminds import controlledterms
 from fairgraph.openminds.core.miscellaneous.quantitative_value import QuantitativeValue
 import fairgraph.openminds.core as omcore
