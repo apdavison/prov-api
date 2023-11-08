@@ -145,7 +145,7 @@ def _get_hosting_organizations():
     kg_client_service_account = get_kg_client_for_service_account()
     hosting_orgs = {
         name: omcore.Organization.list(kg_client_service_account, scope="any", space="common", alias=name)[0]
-        for name in ("EBRAINS", "GitHub", "Yale", "EBI", "CERN", "CSCS", "CNRS")
+        for name in ("EBRAINS", "GitHub", "Yale", "EBI", "CERN", "CSCS", "CNRS", "University of Manchester", "KIP")
     }
     # CSCS = KGProxy(omcore.Organization, "https://kg.ebrains.eu/api/instances/e3f16a1a-184e-447d-aced-375c00ec4d41")
     # GitHub = KGProxy(omcore.Organization, "https://kg.ebrains.eu/api/instances/8e16b752-a95a-41f9-acc7-7f7e7c950f1d")
@@ -181,6 +181,8 @@ file_location_patterns = {
     "https://gpfs-proxy.brainsimulation.eu/cscs": FILE_HOSTS["CSCS"],
     #"https://gpfs-proxy.brainsimulation.eu/jsc": JSC,
     "https://data-proxy.ebrains.eu": FILE_HOSTS["EBRAINS"],
+    "https://spinnaker.cs.man.ac.uk": FILE_HOSTS["University of Manchester"],
+    "https://brainscales-r.kip.uni-heidelberg.de": FILE_HOSTS["KIP"]
 }
 
 
@@ -212,6 +214,10 @@ def get_repository_iri(url):
 
     if url.startswith("https://drive.ebrains.eu"):
         return IRI("https://drive.ebrains.eu")
+    elif url.startswith("https://spinnaker.cs.man.ac.uk"):
+        return IRI("https://spinnaker.cs.man.ac.uk")
+    elif url.startswith("https://brainscales-r.kip.uni-heidelberg.de"):
+        return IRI("https://brainscales-r.kip.uni-heidelberg.de")
     raise NotImplementedError(f"Repository IRI format not yet supported. Value was {url}")
 
 
@@ -230,6 +236,10 @@ def get_repository_name(url):
 
     if url.startswith("https://drive.ebrains.eu"):
         return "EBRAINS Drive"
+    elif url.startswith("https://spinnaker.cs.man.ac.uk"):
+        return "SpiNNaker Manchester temporary storage"
+    elif url.startswith("https://brainscales-r.kip.uni-heidelberg.de"):
+        return "BrainScaleS temporary storage"
     raise NotImplementedError(f"Repository IRI format not yet supported. Value was {url}")
 
 
@@ -252,6 +262,8 @@ def get_repository_type(url):
         return REPOSITORY_TYPES["GitLab repository"]
     elif url.startswith("https://github.com"):
         return REPOSITORY_TYPES["GitHub repository"]
+    elif "spinnaker" in url or "brainscales" in url:
+        return REPOSITORY_TYPES["FTP repository"]  # temporary, need to add controlled term "Simple HTTP repository"
     raise NotImplementedError(f"Repository IRI format not yet supported. Value was {url}")
 
 
@@ -307,7 +319,7 @@ class File(BaseModel):
         )
 
     def to_kg_object(self, client):
-        if self.location and self.location.startswith("http"):
+        if self.location and self.location.startswith("http") and self.hash:
             file_repository = omcore.FileRepository(
                 hosted_by=get_repository_host(self.location),
                 iri=get_repository_iri(self.location),
