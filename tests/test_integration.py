@@ -243,6 +243,7 @@ def test_about():
     assert response.status_code == 200
     expected = {
         'about': 'This is the EBRAINS Provenance API.',
+        'build': None,
         'links': {'documentation': '/docs'}
     }
     assert response.json() == expected
@@ -304,6 +305,7 @@ class TestGetDataAnalysis:
                                 "value": "9006f7ca30ee32d210249ba125dfd96d18b6669e"},
                         "location": "https://drive.ebrains.eu/f/61ceb5c4aa3c4468a26c/",
                         "size": 60715}],
+            "project_id": "provenance-api-development",
             "recipe_id": None,
             "resource_usage": [{"units": "hour", "value": 2.0}],
             "start_time": "2021-05-28T16:32:58.597000+00:00",
@@ -375,8 +377,8 @@ class TestGetDataAnalysis:
         response = test_client.get(f"/analyses/?status=completed&space={TEST_SPACE}",
                                 headers={"Authorization": f"Bearer {token}"})
         data = response.json()
-        assert len(data) == 0
-
+        assert len(data) > 0
+        assert all(item["status"] == "completed" for item in data)
 
     def test_query_data_analysis_by_tags(self, data_analysis_obj, input_file_obj):
         pass
@@ -452,6 +454,7 @@ class TestGetVisualisation:
                                 "value": "9006f7ca30ee32d210249ba125dfd96d18b6669e"},
                         "location": "https://drive.ebrains.eu/f/61ceb5c4aa3c4468a26c/",
                         "size": 60715}],
+            "project_id": "provenance-api-development",
             "recipe_id": None,
             "resource_usage": [{"units": "second", "value": 29.0}],
             "start_time": "2021-06-28T16:32:58+00:00",
@@ -565,6 +568,7 @@ class TestCreateWorkflowRecipe:
             "developers": [{"given_name": person_obj.given_name, "family_name": person_obj.family_name}],
             "homepage": "https://gitlab.ebrains.eu/technical-coordination/project-internal/workflows/cwl-workflows/-/tree/main/PSD_workflow_KG",
             "location": "https://gitlab.ebrains.eu/technical-coordination/project-internal/workflows/cwl-workflows",
+            "project_id": "provenance-api-development",
             "version_identifier": "12345678"
         }
         token = kg_client.token

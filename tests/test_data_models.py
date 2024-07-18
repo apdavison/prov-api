@@ -180,7 +180,8 @@ class TestDataAnalysis:
             started_by=started_by,
             status=omterms.ActionStatusType(name="potential"),  # i.e. queued
             resource_usages=resource_usage,
-            tags=["string"]
+            tags=["string"],
+            space="collab-fake-space"
         )
 
         client = MockKGClient()
