@@ -9,7 +9,7 @@ from fairgraph.utility import as_list
 from fairgraph import IRI
 from fairgraph.queries import QueryProperty, Query, Filter
 import fairgraph.openminds.core as omcore
-import fairgraph.openminds.controlledterms as omterms
+import fairgraph.openminds.controlled_terms as omterms
 import fairgraph.openminds.computation as omcmp
 from ..common.data_models import (
     Person,
@@ -104,8 +104,8 @@ class WorkflowRecipe(BaseModel):
                 location = str(repo_obj.iri)
         return cls(
             id=recipe_version.uuid,
-            name=recipe_version.name or recipe.name,
-            alias=recipe_version.alias or recipe.alias,
+            name=recipe_version.full_name or recipe.full_name,
+            alias=recipe_version.short_name or recipe.short_name,
             custodians=custodians,
             description=recipe_version.description or recipe.description,
             developers=developers,
@@ -126,8 +126,8 @@ class WorkflowRecipe(BaseModel):
         else:
             format = None
         return omcmp.WorkflowRecipeVersion(
-            name=self.name,
-            alias=self.alias,
+            full_name=self.name,
+            short_name=self.alias,
             # accessibility',
             # copyright',
             custodians=[p.to_kg_object(client) for p in self.custodians],

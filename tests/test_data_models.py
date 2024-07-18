@@ -25,7 +25,7 @@ import provenance.visualisation.examples
 import provenance.optimisation.examples
 import provenance.workflows.examples
 import fairgraph.openminds.core as omcore
-import fairgraph.openminds.controlledterms as omterms
+import fairgraph.openminds.controlled_terms as omterms
 import fairgraph.openminds.computation as omcmp
 from fairgraph import IRI
 

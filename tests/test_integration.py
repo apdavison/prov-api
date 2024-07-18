@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from fairgraph.client import KGClient
 import fairgraph.openminds.core as omcore
-import fairgraph.openminds.controlledterms as omterms
+import fairgraph.openminds.controlled_terms as omterms
 import fairgraph.openminds.computation as omcmp
 from fairgraph import IRI
 from fairgraph.utility import as_list
@@ -24,7 +24,7 @@ TEST_SPACE = "collab-provenance-api-development"
 
 
 
-kg_client = KGClient(host="core.kg-ppd.ebrains.eu")  # don't use production for testing
+kg_client = KGClient(host="core.kg-ppd.ebrains.eu", allow_interactive=False)  # don't use production for testing
 assert os.environ["KG_CORE_API_HOST"] == kg_client.host
 if kg_client.user_info():
     have_kg_connection = True
@@ -113,12 +113,12 @@ def output_file_objs(units):
 @pytest.fixture(scope="module")
 def software_version_objs():
     objs = [
-        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", name="Elephant", alias="Elephant", version_identifier="0.10.0"),
-        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", name="numpy", alias="numpy", version_identifier="1.19.3"),
-        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", name="neo", alias="neo", version_identifier="0.9.0"),
-        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", name="spyNNaker", alias="spyNNaker", version_identifier="5.0.0"),
-        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", name="NEST", alias="nest", version_identifier="3.1.0"),
-        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", name="MyScript", alias="myscript", version_identifier="0.0.1"),
+        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", full_name="Elephant", short_name="Elephant", version_identifier="0.10.0"),
+        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", full_name="numpy", short_name="numpy", version_identifier="1.19.3"),
+        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", full_name="neo", short_name="neo", version_identifier="0.9.0"),
+        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", full_name="spyNNaker", short_name="spyNNaker", version_identifier="5.0.0"),
+        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", full_name="NEST", short_name="nest", version_identifier="3.1.0"),
+        omcore.SoftwareVersion(id=f"{ID_PREFIX}/{uuid4()}", full_name="MyScript", short_name="myscript", version_identifier="0.0.1"),
     ]
     for obj in objs:
         obj.save(kg_client, space=TEST_SPACE)
@@ -131,8 +131,8 @@ def software_version_objs():
 def model_version_obj():
     obj = omcore.ModelVersion(
         id=f"{ID_PREFIX}/{uuid4()}",
-        name="A really good model",
-        alias="a-really-good-model",
+        full_name="A really good model",
+        short_name="a-really-good-model",
         version_identifier="10.0"
     )
     obj.save(kg_client, space=TEST_SPACE)
@@ -142,7 +142,7 @@ def model_version_obj():
 
 @pytest.fixture(scope="module")
 def hardware_obj():
-    obj = omcmp.HardwareSystem.by_name("CSCS Castor", kg_client, scope="in progress", space="common")
+    obj = omcmp.HardwareSystem.by_name("CSCS Castor", kg_client, scope="any", space="common")
     assert obj is not None
     return obj
 
@@ -556,7 +556,7 @@ class TestCreateSimulation:
 class TestCreateWorkflowRecipe:
 
     def test_post_recipe(self, person_obj):
-        existing_recipe = omcmp.WorkflowRecipeVersion.list(kg_client, alias="PSD_workflow_KG", version_identifier="12345678", scope="in progress")
+        existing_recipe = omcmp.WorkflowRecipeVersion.list(kg_client, short_name="PSD_workflow_KG", version_identifier="12345678", scope="in progress")
         if existing_recipe:
             for recipe in as_list(existing_recipe):
                 recipe.delete(kg_client)

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from fairgraph.client import KGClient
 import fairgraph.openminds.core as omcore
-import fairgraph.openminds.controlledterms as omterms
+import fairgraph.openminds.controlled_terms as omterms
 import fairgraph.openminds.computation as omcmp
 from fairgraph import IRI
 from fairgraph.utility import as_list
@@ -22,7 +22,7 @@ ID_PREFIX = "https://kg.ebrains.eu/api/instances"
 
 
 
-kg_client = KGClient(host="core.kg.ebrains.eu")  # DANGER: using prod client - only put GET tests in this file
+kg_client = KGClient(host="core.kg.ebrains.eu", allow_interactive=False)  # DANGER: using prod client - only put GET tests in this file
 if kg_client.user_info() and os.environ["KG_CORE_API_HOST"] == kg_client.host:
     have_kg_connection = True
 else:

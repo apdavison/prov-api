@@ -147,8 +147,8 @@ def create_workflow_recipe(
         parent_workflow.versions = as_list(parent_workflow.versions) + [kg_recipe_version]
     else:
         parent_workflow = omcmp.WorkflowRecipe(
-            name=kg_recipe_version.name,
-            alias=kg_recipe_version.alias,
+            name=kg_recipe_version.full_name,
+            alias=kg_recipe_version.short_name,
             description=kg_recipe_version.description,
             developers=kg_recipe_version.developers,
             versions=[kg_recipe_version])

@@ -37,11 +37,11 @@ from pydantic import BaseModel, AnyUrl, Field, Json
 
 from fairgraph import KGProxy, IRI
 from fairgraph.utility import as_list
-#from fairgraph.openminds import controlledterms
+#from fairgraph.openminds import controlled_terms
 from fairgraph.openminds.core.miscellaneous.quantitative_value import QuantitativeValue
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.computation as omcmp
-from fairgraph.openminds.controlledterms import FileRepositoryType, UnitOfMeasurement, ActionStatusType
+from fairgraph.openminds.controlled_terms import FileRepositoryType, UnitOfMeasurement, ActionStatusType
 
 from .examples import EXAMPLES
 from ..auth.utils import get_kg_client_for_service_account
@@ -144,7 +144,7 @@ class Digest(BaseModel):
 def _get_hosting_organizations():
     kg_client_service_account = get_kg_client_for_service_account()
     hosting_orgs = {
-        name: omcore.Organization.list(kg_client_service_account, scope="any", space="common", alias=name)[0]
+        name: omcore.Organization.list(kg_client_service_account, scope="any", space="common", short_name=name)[0]
         for name in ("EBRAINS", "GitHub", "Yale", "EBI", "CERN", "CSCS", "CNRS", "University of Manchester", "KIP")
     }
     # CSCS = KGProxy(omcore.Organization, "https://kg.ebrains.eu/api/instances/e3f16a1a-184e-447d-aced-375c00ec4d41")
@@ -572,7 +572,7 @@ class SoftwareVersion(BaseModel):
         )
 
     def to_kg_object(self, client):
-        obj = omcore.SoftwareVersion(name=self.software_name, alias=self.software_name,
+        obj = omcore.SoftwareVersion(full_name=self.software_name, short_name=self.software_name,
                                      version_identifier=self.software_version)
         # allow creating missing software instances (e.g. in private space)
         # but not modifying existing ones
