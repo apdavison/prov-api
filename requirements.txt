@@ -3,3 +3,4 @@ fastapi
 itsdangerous
 Authlib
 httpx
+fairgraph

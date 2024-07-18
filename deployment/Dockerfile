@@ -4,43 +4,28 @@
 # To build the image, from the parent directory:
 #   docker build -t prov_api -f deployment/Dockerfile .
 #
-# To run the application:
-#   docker run -d -p 443:443 -v /etc/letsencrypt:/etc/letsencrypt \
-#              -e KG_SERVICE_ACCOUNT_REFRESH_TOKEN \
-#              -e KG_SERVICE_ACCOUNT_CLIENT_ID \
-#              -e KG_SERVICE_ACCOUNT_SECRET \
-#              prov_api
+# To run the application, the following environment variables must be provided:
+#   - KG_SERVICE_ACCOUNT_CLIENT_ID
+#   - KG_SERVICE_ACCOUNT_SECRET
+#   - EBRAINS_IAM_CLIENT_ID
+#   - EBRAINS_IAM_SECRET
+#   - SESSIONS_SECRET_KEY
+#   - PROV_API_BASE_URL
+#   - KG_CORE_API_HOST
 
-FROM debian:bullseye-slim
+FROM docker-registry.ebrains.eu/prov-api/python:3.11
 
-MAINTAINER Andrew Davison <andrew.davison@cnrs.fr>
+LABEL org.opencontainers.image.authors="Andrew Davison <andrew.davison@cnrs.fr>"
 
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update --fix-missing; apt-get -y -q install python-pkg-resources python3-pkg-resources python3-pip supervisor build-essential nginx-extras git wget
-RUN unset DEBIAN_FRONTEND
+WORKDIR /code
 
-RUN pip3 install --upgrade pip
+COPY requirements.txt.lock /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-ADD https://api.github.com/repos/HumanBrainProject/fairgraph/git/refs/heads/master fairgraph_version.json
-RUN git clone --branch master https://github.com/HumanBrainProject/fairgraph.git
-#RUN pip3 install -r fairgraph/requirements.txt
-RUN pip3 install ./fairgraph
+COPY provenance /code/provenance
+COPY deployment/build_info.json /code/provenance/build_info.json
 
-ENV SITEDIR /home/docker/site
+RUN useradd appuser --uid 1001
+USER appuser
 
-COPY requirements.txt $SITEDIR/
-RUN pip3 install -r $SITEDIR/requirements.txt
-
-COPY provenance $SITEDIR/provenance
-
-ENV PYTHONPATH  /home/docker:/home/docker/site:/usr/lib/python2.7/dist-packages/:/usr/local/lib/python3.7/dist-packages:/usr/lib/python3.7/dist-packages
-
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-RUN rm /etc/nginx/sites-enabled/default
-COPY deployment/nginx-app.conf /etc/nginx/sites-enabled/
-COPY deployment/supervisor-app.conf /etc/supervisor/conf.d/
-
-EXPOSE 443
-#EXPOSE 80
-
-CMD ["supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisor-app.conf"]
+CMD ["uvicorn", "provenance.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "80", "--timeout-keep-alive", "300"]
