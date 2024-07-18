@@ -1,3 +1,4 @@
+import json
 import os
 
 HBP_IDENTITY_SERVICE_URL_V2 = "https://iam.ebrains.eu/auth/realms/hbp/protocol/openid-connect"
@@ -11,3 +12,11 @@ SESSIONS_SECRET_KEY = os.environ.get("SESSIONS_SECRET_KEY")
 BASE_URL = os.environ.get("PROV_API_BASE_URL")
 KG_CORE_API_HOST = os.environ.get("KG_CORE_API_HOST")
 ADMIN_GROUP_ID = "computation-curators"
+
+this_dir = os.path.dirname(__file__)
+build_info_path = os.path.join(this_dir, "build_info.json")
+if os.path.exists(build_info_path):
+    with open(build_info_path, "r") as fp:
+        BUILD_INFO = json.load(fp)
+else:
+    BUILD_INFO = None

@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.requests import Request
 from .oauth import oauth
-from ..settings import BASE_URL
+from ..settings import BASE_URL, BUILD_INFO
 
 router = APIRouter()
 auth = HTTPBearer()
@@ -32,6 +32,7 @@ auth = HTTPBearer()
 def about_this_api():
     return {
         "about": "This is the EBRAINS Provenance API.",
+        "build": BUILD_INFO,
         "links": {
             "documentation": "/docs"
         }
