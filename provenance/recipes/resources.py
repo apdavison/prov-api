@@ -61,7 +61,8 @@ def query_workflow_recipes(
             from_index=from_index, size=size)
     except fairgraph.errors.AuthenticationError:
         raise AuthenticationError()
-    return [WorkflowRecipe.from_kg_object(rcp, kg_client) for rcp in recipes]
+    results = [WorkflowRecipe.from_kg_object(rcp, kg_client) for rcp in recipes]
+    return [result for result in results if result is not None]
 
 
 @router.get("/recipes/{recipe_id}", response_model=WorkflowRecipe)

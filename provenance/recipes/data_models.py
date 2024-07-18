@@ -61,12 +61,17 @@ class WorkflowRecipe(BaseModel):
 
     @classmethod
     def from_kg_object(cls, recipe_version, client):
-        recipe = omcmp.WorkflowRecipe.list(
+        parents = omcmp.WorkflowRecipe.list(
             client,
             scope="any",
             # space=recipe_version.space,
             versions=recipe_version,
-        )[0]
+        )
+        if len(parents) == 0:
+            return None
+        else:
+            recipe = parents[0]
+
         if recipe_version.custodians:
             custodians = [
                 Person.from_kg_object(p, client)
