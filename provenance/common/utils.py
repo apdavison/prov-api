@@ -10,7 +10,7 @@ from ..auth.utils import get_kg_client_for_user_account, is_collab_admin
 
 
 
-def create_computation(pydantic_cls, fairgraph_cls, pydantic_obj, space, token):
+def create_computation(pydantic_cls, fairgraph_cls, pydantic_obj, space, token, background_tasks=None):
     kg_client = get_kg_client_for_user_account(token.credentials)
     if pydantic_obj.id is not None:
         try:
@@ -25,12 +25,17 @@ def create_computation(pydantic_cls, fairgraph_cls, pydantic_obj, space, token):
             )
     pydantic_obj.id = uuid4()
     kg_computation_object = pydantic_obj.to_kg_object(kg_client)
-    try:
-        kg_computation_object.save(kg_client, space=space, recursive=True)
-    except fairgraph.errors.AuthenticationError:
+    if background_tasks:
+            background_tasks.add_task(kg_computation_object.save, kg_client, space=space, recursive=True)
+    else:
+        try:
+            kg_computation_object.save(kg_client, space=space, recursive=True)
+        except fairgraph.errors.AuthenticationError:
             raise AuthenticationError()
-    return pydantic_cls.from_kg_object(kg_computation_object, kg_client)
-
+    if background_tasks:
+        return pydantic_obj
+    else:
+        return pydantic_cls.from_kg_object(kg_computation_object, kg_client)
 
 
 def replace_computation(pydantic_cls, fairgraph_cls, computation_id, pydantic_obj, token):

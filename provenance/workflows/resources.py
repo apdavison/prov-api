@@ -26,7 +26,7 @@ import logging
 import fairgraph.openminds.computation as omcmp
 import fairgraph.errors
 
-from fastapi import APIRouter, Depends, Header, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Header, Query, HTTPException, status, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import ValidationError
 
@@ -76,13 +76,14 @@ def query_workflows(
 @router.post("/workflows/", response_model=WorkflowExecution, status_code=status.HTTP_201_CREATED)
 def store_recorded_workflow(
     workflow: WorkflowExecution,
+    background_tasks: BackgroundTasks,
     space: str = "myspace",
     token: HTTPAuthorizationCredentials = Depends(auth)
 ):
     """
     Store a new record of a workflow execution in the Knowledge Graph.
     """
-    return create_computation(WorkflowExecution, omcmp.WorkflowExecution, workflow, space, token)
+    return create_computation(WorkflowExecution, omcmp.WorkflowExecution, workflow, space, token, background_tasks)
 
 
 @router.get("/workflows/{workflow_id}", response_model=WorkflowExecution)
