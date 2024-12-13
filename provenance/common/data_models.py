@@ -25,7 +25,7 @@ from typing import List, Union, Optional, Any
 import re
 import hashlib
 import json
-from fairgraph.utility import as_list
+import logging
 
 try:
     from typing import Literal  # Python >= 3.8
@@ -42,11 +42,12 @@ from fairgraph.openminds.core.miscellaneous.quantitative_value import Quantitati
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.computation as omcmp
 from fairgraph.openminds.controlled_terms import FileRepositoryType, UnitOfMeasurement, ActionStatusType
+from fairgraph.errors import ResolutionFailure
 
 from .examples import EXAMPLES
 from ..auth.utils import get_kg_client_for_service_account
 
-
+logger = logging.getLogger("ebrains-prov-api")
 
 status_name_map = {
     "active": "running",
@@ -607,9 +608,14 @@ class ComputationalEnvironment(BaseModel):
                     hardware = HardwareSystem(hardware_obj.name)
 
             if env.configuration:
-                config_obj = env.configuration.resolve(client, scope="any")
-                if config_obj:
-                    config = json.loads(config_obj.configuration)
+                try:
+                    config_obj = env.configuration.resolve(client, scope="any")
+                except ResolutionFailure as err:
+                    logger.debug("err")
+                    config = None
+                else:
+                    if config_obj:
+                        config = json.loads(config_obj.configuration)
         return cls(
             id=client.uuid_from_uri(env.id),
             name=env.name,

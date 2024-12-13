@@ -23,11 +23,13 @@ from uuid import UUID
 from typing_extensions import Annotated
 
 import json
+import logging
 from pydantic import BaseModel, Field
 
 from fairgraph import KGProxy
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.computation as omcmp
+from fairgraph.errors import ResolutionFailure
 from ..common.data_models import Person
 from ..simulation.data_models import Simulation
 from ..dataanalysis.data_models import DataAnalysis
@@ -36,6 +38,9 @@ from ..optimisation.data_models import Optimisation
 from ..datacopy.data_models import DataCopy
 from ..generic.data_models import GenericComputation
 from ..common.utils import collab_id_from_space
+
+
+logger = logging.getLogger("ebrains-prov-api")
 
 
 class WorkflowRecipe(BaseModel):
@@ -87,7 +92,11 @@ class WorkflowExecution(BaseModel):
         ]
         config = None
         if weo.configuration:
-            config_obj = weo.configuration.resolve(client, scope="any")
+            try:
+                config_obj = weo.configuration.resolve(client, scope="any")
+            except ResolutionFailure as err:
+                logger.debug(err)
+                config_obj = None
             if config_obj:
                 config = json.loads(config_obj.configuration)
         return cls(
