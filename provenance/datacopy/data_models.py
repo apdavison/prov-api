@@ -34,7 +34,7 @@ import fairgraph.openminds.core as omcore
 from ..common.data_models import (
     Computation, ComputationPatch, Status, Person, ResourceUsage, LaunchConfiguration,
     ComputationalEnvironment, File, SoftwareVersion, ACTION_STATUS_TYPES, status_name_map,
-    ModelVersionReference, DatasetVersionReference
+    ModelVersionReference, DatasetVersionReference, FileReference
 )
 from ..common.utils import collab_id_from_space
 
@@ -46,7 +46,7 @@ class DataCopy(Computation):
     """Record of a data copy operation"""
     kg_cls = omcmp.DataCopy
 
-    input: List[Union[File, ModelVersionReference, DatasetVersionReference, SoftwareVersion]] = Field(...,
+    input: List[Union[File, FileReference, ModelVersionReference, DatasetVersionReference, SoftwareVersion]] = Field(...,
         description="Items to be copied (models, datasets, data files, and/or software)")  # todo: add ValidationTestVersion
     type: Literal["data transfer"]
 
