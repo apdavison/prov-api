@@ -133,6 +133,7 @@ class ComputationType(str, Enum):
     datatransfer = "data transfer"
     miscellaneous = "unknown"
     #preprocessing = "pre-processing"
+    #formatconversion = "format conversion"
 
 
 class Digest(BaseModel):
@@ -768,3 +769,20 @@ class DatasetVersionReference(BaseModel):
 
     def to_kg_object(self, client):
         return omcore.DatasetVersion.from_uuid(str(self.dataset_version_id), client, scope="any")
+
+
+class FileReference(BaseModel):
+    """
+    Reference to a file, based on a dataset version and a path.
+    """
+
+    dataset_version_id: UUID
+    datafile_path: str
+
+    @classmethod
+    def from_kg_object(cls, file_obj, client):
+        raise NotImplementedError()
+
+    def to_kg_object(self, client):
+        dataset_version = omcore.DatasetVersion.from_id(str(self.dataset_version_id), client, scope="any", follow_links={"repository": {"files": {}}})
+        return [file_ for file_ in dataset_version.repository.files if self.datafile_path in str(file_.iri)][0]

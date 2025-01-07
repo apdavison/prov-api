@@ -12,6 +12,7 @@ from . import (
     generic,
     workflows,
     recipes,
+    datasets,
     auth,
     statistics,
 )
@@ -44,5 +45,6 @@ app.include_router(visualisation.router, tags=["Visualisation"])
 app.include_router(optimisation.router, tags=["Optimisation"])
 app.include_router(datacopy.router, tags=["Data transfer"])
 app.include_router(generic.router, tags=["Unclassified"])
+app.include_router(datasets.router, tags=["Dataset generation"])
 app.include_router(auth.router, tags=["Authentication and authorization"])
 #app.include_router(vocab.router, tags=["Controlled vocabularies"])
