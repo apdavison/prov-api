@@ -52,6 +52,8 @@ class MatomoMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start = time.monotonic()
         response = await call_next(request)
+        if response.status_code == 404:
+            return response
         server_time_ms = int((time.monotonic() - start) * 1000)
 
         url = str(request.url)
