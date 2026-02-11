@@ -18,8 +18,9 @@ docstring goes here
    limitations under the License.
 """
 
-from fastapi import APIRouter, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPBearer
 from starlette.requests import Request
 from .oauth import oauth
 from ..settings import BASE_URL, BUILD_INFO
@@ -65,3 +66,34 @@ async def auth_via_ebrains(request: Request):
     # }
     full_response = {"token": token, "user": user}
     return full_response
+
+
+@router.get("/matomo-debug/", response_class=HTMLResponse)
+async def trigger_matomo():
+    return """
+    <html>
+        <head>
+            <title>Provenance API: debugging Matomo connection</title>
+            <!-- Matomo -->
+            <script>
+            var _paq = window._paq = window._paq || [];
+            /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+            _paq.push(['trackPageView']);
+            _paq.push(['enableLinkTracking']);
+            (function() {
+                var u="https://stats.humanbrainproject.eu/";
+                _paq.push(['setTrackerUrl', u+'matomo.php']);
+                _paq.push(['setSiteId', '43']);
+                var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+                g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+            })();
+            </script>
+            <!-- End Matomo Code -->
+        </head>
+        <body>
+            <h1>Debugging Matomo connection</h1>
+
+            <p><a href="https://stats.humanbrainproject.eu/index.php?module=CoreHome&action=index&date=today&period=day&idSite=43">Matomo dashboard</a></p>
+        </body>
+    </html>
+    """
