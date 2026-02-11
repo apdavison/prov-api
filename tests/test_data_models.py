@@ -7,10 +7,6 @@ import json
 from fairgraph.utility import compact_uri
 from fairgraph.openminds.core.miscellaneous.quantitative_value import QuantitativeValue
 
-import jsondiff
-
-from pydantic import parse_obj_as
-
 sys.path.append(".")
 from provenance.common.data_models import ResourceUsage, get_repository_iri
 from provenance.dataanalysis.data_models import DataAnalysis
@@ -48,7 +44,7 @@ class MockKGClient:
             "http://schema.org/givenName": "Sherlock"
         }
 
-    def list(self, cls, space=None, from_index=0, size=100, api="core", scope="released",
+    def list(self, cls, space=None, from_index=0, size=100, api="core", release_status="released",
              resolved=False, filter=None):
         if cls == omcore.Person:
             return [omcore.Person(given_name="Sherlock", family_name="Holmes")]
@@ -60,7 +56,7 @@ class MockKGClient:
     def uuid_from_uri(self, uri):
         return uri.split("/")[-1]
 
-    def instance_from_full_uri(self, uri, use_cache=True, scope="released", resolved=False):
+    def instance_from_full_uri(self, uri, use_cache=True, release_status="released", resolved=False):
         objects = {
             "kg:3fa85f64-5717-4562-b3fc-2c963f66afa6": {
                 "@id": "kg:3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -97,7 +93,7 @@ class TestCommon:
         assert repo_iri == "https://gpfs-proxy.brainsimulation.eu/cscs/myproject"
 
     def test_resource_usage(self):
-        pydantic_obj = parse_obj_as(ResourceUsage, EXAMPLES["ResourceUsage"])
+        pydantic_obj = ResourceUsage(**EXAMPLES["ResourceUsage"])
         kg_client = MockKGClient()
         kg_object = pydantic_obj.to_kg_object(kg_client)
         assert isinstance(kg_object, QuantitativeValue)
@@ -109,8 +105,7 @@ class TestCommon:
 class TestDataAnalysis:
 
     def test_conversion_to_kg_objects(self):
-        #pydantic_obj = DataAnalysis(**EXAMPLES["DataAnalysis"])
-        pydantic_obj = parse_obj_as(DataAnalysis, EXAMPLES["DataAnalysis"])
+        pydantic_obj = DataAnalysis(**EXAMPLES["DataAnalysis"])
         kg_client = MockKGClient()
         kg_objects = pydantic_obj.to_kg_object(kg_client)
 
@@ -125,7 +120,7 @@ class TestDataAnalysis:
         inputs = [
             omcore.File(
                 content_description="Demonstration data for validation framework",
-                format=omcore.ContentType(name="application/json", id=f"{ID_PREFIX}/00000000-0000-0000-0000-000000000000"),
+                format=omcore.ContentType.application_json,
                 hash=omcore.Hash(algorithm="SHA-1", digest="716c29320b1e329196ce15d904f7d4e3c7c46685"),
                 iri=IRI("https://object.cscs.ch/v1/AUTH_c0a333ecf7c045809321ce9d9ecdfdea/VF_paper_demo/obs_data/InputResistance_data.json"),
                 name="InputResistance_data.json",
@@ -193,7 +188,7 @@ class TestDataAnalysis:
             item.id = None
         pydantic_obj.input[1].id = None
 
-        actual = json.loads(pydantic_obj.json(exclude_none=True))
+        actual = json.loads(pydantic_obj.model_dump_json(exclude_none=True))
         #expected = json.dumps(deepcopy(EXAMPLES["DataAnalysis"]))
         expected = EXAMPLES["DataAnalysis"]
 
@@ -205,7 +200,7 @@ class TestDataAnalysis:
 class TestVisualisation:
 
     def test_conversion_to_kg_objects(self):
-        pydantic_obj = parse_obj_as(Visualisation, EXAMPLES["Visualisation"])
+        pydantic_obj = Visualisation(**EXAMPLES["Visualisation"])
         kg_client = MockKGClient()
         kg_objects = pydantic_obj.to_kg_object(kg_client)
 
@@ -213,7 +208,7 @@ class TestVisualisation:
 class TestSimulation:
 
     def test_conversion_to_kg_objects(self):
-        pydantic_obj = parse_obj_as(Simulation, EXAMPLES["Simulation"])
+        pydantic_obj = Simulation(**EXAMPLES["Simulation"])
         kg_client = MockKGClient()
         kg_objects = pydantic_obj.to_kg_object(kg_client)
 
@@ -221,7 +216,7 @@ class TestSimulation:
 class TestOptimisation:
 
     def test_conversion_to_kg_objects(self):
-        pydantic_obj = parse_obj_as(Optimisation, EXAMPLES["Optimisation"])
+        pydantic_obj = Optimisation(**EXAMPLES["Optimisation"])
         #kg_client = MockKGClient()
         #kg_objects = pydantic_obj.to_kg_object(kg_client)
 
@@ -229,6 +224,6 @@ class TestOptimisation:
 class TestWorkflow:
 
     def test_conversion_to_kg_objects(self):
-        pydantic_obj = parse_obj_as(WorkflowExecution, EXAMPLES["WorkflowExecution"])
+        pydantic_obj = WorkflowExecution(**EXAMPLES["WorkflowExecution"])
         kg_client = MockKGClient()
         kg_objects = pydantic_obj.to_kg_object(kg_client)

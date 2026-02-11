@@ -74,7 +74,7 @@ def query_simulations(
     # filter by model version
     if model_version:
         # todo: add a query for un-released model versions
-        model_version_obj = omcore.ModelVersion.from_id(str(model_version), kg_client, scope="released")
+        model_version_obj = omcore.ModelVersion.from_id(str(model_version), kg_client, release_status="released")
         if model_version_obj is None:
             raise HTTPException(
                 status_code=status_codes.HTTP_404_NOT_FOUND,
@@ -86,9 +86,9 @@ def query_simulations(
         filters["inputs"].append(simulator)
     # filter by hardware platform
     if platform:
-        hardware_obj = omcmp.HardwareSystem.by_name(platform.value, kg_client, scope="any", space="common")
+        hardware_obj = omcmp.HardwareSystem.by_name(platform.value, kg_client, release_status="any", space="common")
         # todo: handle different versions of hardware platforms
-        environments = omcmp.Environment.list(kg_client, hardware=hardware_obj, scope="any", space=space)
+        environments = omcmp.Environment.list(kg_client, hardware=hardware_obj, release_status="any", space=space)
         filters["environment"].extend(as_list(environments))
     # filter by status
     if status:
@@ -101,7 +101,7 @@ def query_simulations(
         if key in filters and len(filters[key]) == 0:
             del filters[key]
 
-    simulation_objects = omcmp.Simulation.list(kg_client, scope="any", api="query",
+    simulation_objects = omcmp.Simulation.list(kg_client, release_status="any", api="query",
                                                size=size, from_index=from_index,
                                                space=space)
     return [Simulation.from_kg_object(obj, kg_client) for obj in simulation_objects]
@@ -129,7 +129,7 @@ def get_simulation(simulation_id: UUID, token: HTTPAuthorizationCredentials = De
     """
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        simulation_object = omcmp.Visualization.from_uuid(str(simulation_id), kg_client, scope="any")
+        simulation_object = omcmp.Visualization.from_uuid(str(simulation_id), kg_client, release_status="any")
     except TypeError as err:
         raise NotFoundError("simulation", simulation_id)
     if simulation_object is None:

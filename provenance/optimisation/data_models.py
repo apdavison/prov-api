@@ -21,7 +21,8 @@ docstring goes here
 
 import logging
 from uuid import UUID
-from typing import Union, Literal, List
+from typing import ClassVar, Union, Literal, List
+from fairgraph import KGObject
 from fairgraph.openminds.computation import Optimization as KGOptimization
 
 from ..common.data_models import (
@@ -37,7 +38,7 @@ logger = logging.getLogger("ebrains-prov-api")
 
 class Optimisation(Computation):
     """Record of an optimization"""
-    kg_cls = KGOptimization
+    kg_cls: ClassVar[KGObject] = KGOptimization
 
     input: List[Union[File, ModelVersionReference, SoftwareVersion]]
     output: List[Union[File, ModelVersionReference]]

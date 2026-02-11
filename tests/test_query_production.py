@@ -1,19 +1,10 @@
 
 import sys
 import os
-from uuid import uuid4
-import json
-from datetime import datetime, timezone
 import pytest
-from pydantic import parse_obj_as
 from fastapi.testclient import TestClient
 
 from fairgraph.client import KGClient
-import fairgraph.openminds.core as omcore
-import fairgraph.openminds.controlled_terms as omterms
-import fairgraph.openminds.computation as omcmp
-from fairgraph import IRI
-from fairgraph.utility import as_list
 
 sys.path.append(".")  # run tests in root directory of project
 from provenance.main import app

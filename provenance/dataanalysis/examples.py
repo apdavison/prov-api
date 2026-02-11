@@ -1,7 +1,7 @@
 
 EXAMPLES = {
     "DataAnalysis": {
-        "end_time": "2021-05-28T16:32:58.597000+00:00",
+        "end_time": "2021-05-28T16:32:58.597000Z",
         "environment": {
             "name": "SpiNNaker default 2021-10-13",
             "hardware": "SpiNNaker",
@@ -77,7 +77,7 @@ EXAMPLES = {
                 "units": "core-hour"
             }
         ],
-        "start_time": "2021-05-28T16:32:58.597000+00:00",
+        "start_time": "2021-05-28T16:32:58.597000Z",
         "started_by": {
             "family_name": "Destexhe",
             "given_name": "Alain",

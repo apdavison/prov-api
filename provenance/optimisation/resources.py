@@ -83,13 +83,13 @@ def query_optimisations(
     # filter by software
     if software:
         filters["inputs"].extend(as_list(software))
-        environments = omcmp.Environment.list(kg_client, software=software, scope="any", space=space)
+        environments = omcmp.Environment.list(kg_client, software=software, release_status="any", space=space)
         filters["environment"].extend(as_list(environments))
     # filter by hardware platform
     if platform:
-        hardware_obj = omcmp.HardwareSystem.by_name(platform.value, kg_client, scope="any", space="common")
+        hardware_obj = omcmp.HardwareSystem.by_name(platform.value, kg_client, release_status="any", space="common")
         # todo: handle different versions of hardware platforms
-        environments = omcmp.Environment.list(kg_client, hardware=hardware_obj, scope="any", space=space)
+        environments = omcmp.Environment.list(kg_client, hardware=hardware_obj, release_status="any", space=space)
         filters["environment"].extend(as_list(environments))
     # filter by status
     if status:
@@ -102,7 +102,7 @@ def query_optimisations(
         if key in filters and len(filters[key]) == 0:
             del filters[key]
 
-    optimisation_objects = omcmp.Optimization.list(kg_client, scope="any", api="query",
+    optimisation_objects = omcmp.Optimization.list(kg_client, release_status="any", api="query",
                                                    size=size, from_index=from_index,
                                                    space=space)
     return [Optimisation.from_kg_object(obj, kg_client) for obj in optimisation_objects]
@@ -130,7 +130,7 @@ def get_optimisation(optimisation_id: UUID, token: HTTPAuthorizationCredentials 
     """
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        optimisation_object = omcmp.Optimization.from_uuid(str(optimisation_id), kg_client, scope="any")
+        optimisation_object = omcmp.Optimization.from_uuid(str(optimisation_id), kg_client, release_status="any")
     except TypeError as err:
         raise NotFoundError("optimisation", optimisation_id)
     if optimisation_object is None:

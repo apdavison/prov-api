@@ -53,7 +53,7 @@ EXAMPLES = {
         "environment": {
             "name": "EBRAINS Lab 20211028",
             "hardware": "CSCS Castor",
-            "configuration": [],
+            "configuration": None,
             "software": [
                 {
                     "software_name": "python",
@@ -86,8 +86,8 @@ EXAMPLES = {
             ],
             "environment_variables": None
         },
-        "start_time": "2021-10-28T15:29:09.876476+00:00",
-        "end_time": "2021-10-28T15:29:15.298888+00:00",
+        "start_time": "2021-10-28T15:29:09.876476Z",
+        "end_time": "2021-10-28T15:29:15.298888Z",
         "status": "completed",
         "resource_usage": [
             {

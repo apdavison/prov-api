@@ -99,7 +99,7 @@ def query_data_copies(
         if key in filters and len(filters[key]) == 0:
             del filters[key]
 
-    data_copy_objects = omcmp.DataCopy.list(kg_client, scope="any", api="query",
+    data_copy_objects = omcmp.DataCopy.list(kg_client, release_status="any", api="query",
                                             size=size, from_index=from_index,
                                             space=space)
     return [DataCopy.from_kg_object(obj, kg_client) for obj in data_copy_objects]
@@ -127,7 +127,7 @@ def get_data_copy(data_copy_id: UUID, token: HTTPAuthorizationCredentials = Depe
     """
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        data_copy_object = omcmp.DataCopy.from_uuid(str(data_copy_id), kg_client, scope="any")
+        data_copy_object = omcmp.DataCopy.from_uuid(str(data_copy_id), kg_client, release_status="any")
     except TypeError as err:
         raise NotFoundError("data_copy", data_copy_id)
     if data_copy_object is None:

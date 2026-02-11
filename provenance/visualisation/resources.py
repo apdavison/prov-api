@@ -98,7 +98,7 @@ def query_visualisations(
     # filter by simulation
     if simulation:
         # todo: add a query for released simulations
-        simulation_obj = omcmp.Simulation.from_id(str(simulation), kg_client, scope="any")
+        simulation_obj = omcmp.Simulation.from_id(str(simulation), kg_client, release_status="any")
         if simulation_obj is None:
             raise HTTPException(
                 status_code=status_codes.HTTP_404_NOT_FOUND,
@@ -111,13 +111,13 @@ def query_visualisations(
     # filter by software
     if software:
         filters["inputs"].extend(as_list(software))
-        environments = omcmp.Environment.list(kg_client, software=software, scope="any", space=space)
+        environments = omcmp.Environment.list(kg_client, software=software, release_status="any", space=space)
         filters["environment"].extend(as_list(environments))
     # filter by hardware platform
     if platform:
-        hardware_obj = omcmp.HardwareSystem.by_name(platform.value, kg_client, scope="any", space="common")
+        hardware_obj = omcmp.HardwareSystem.by_name(platform.value, kg_client, release_status="any", space="common")
         # todo: handle different versions of hardware platforms
-        environments = omcmp.Environment.list(kg_client, hardware=hardware_obj, scope="any", space=space)
+        environments = omcmp.Environment.list(kg_client, hardware=hardware_obj, release_status="any", space=space)
         filters["environment"].extend(as_list(environments))
     # filter by status
     if status:
@@ -130,7 +130,7 @@ def query_visualisations(
         if key in filters and len(filters[key]) == 0:
             del filters[key]
 
-    visualisation_objects = omcmp.Visualization.list(kg_client, scope="any", api="query",
+    visualisation_objects = omcmp.Visualization.list(kg_client, release_status="any", api="query",
                                                     size=size, from_index=from_index,
                                                     space=space)
     return [Visualisation.from_kg_object(obj, kg_client) for obj in visualisation_objects]
@@ -158,7 +158,7 @@ def get_visualisation(visualisation_id: UUID, token: HTTPAuthorizationCredential
     """
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        visualisation_object = omcmp.Visualization.from_uuid(str(visualisation_id), kg_client, scope="any")
+        visualisation_object = omcmp.Visualization.from_uuid(str(visualisation_id), kg_client, release_status="any")
     except TypeError as err:
         raise NotFoundError("visualisation", visualisation_id)
     if visualisation_object is None:

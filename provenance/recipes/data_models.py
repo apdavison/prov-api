@@ -1,13 +1,10 @@
-from distutils.errors import LibError
-import re
-from typing import List
+from typing import List, Optional
 from enum import Enum
 from uuid import UUID
-from pydantic import AnyHttpUrl, AnyUrl, BaseModel, Field
+from pydantic import AnyHttpUrl, AnyUrl, BaseModel
 
 from fairgraph.utility import as_list
 from fairgraph import IRI
-from fairgraph.queries import QueryProperty, Query, Filter
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.controlled_terms as omterms
 import fairgraph.openminds.computation as omcmp
@@ -42,28 +39,27 @@ content_type_lookup = {
 
 
 class WorkflowRecipe(BaseModel):
-    id: UUID = None
-    alias: str = None
-    custodians: List[Person] = None
-    description: str = None
-    developers: List[Person] = None
-    full_documentation: AnyHttpUrl = None
-    homepage: AnyHttpUrl = None
-    keywords: List[str] = None
-    location: AnyUrl = (
-        None  # temporarily allow None, but really this should always be present
-    )
-    name: str = None
+    id: Optional[UUID] = None
+    alias: Optional[str] = None
+    custodians: Optional[List[Person]] = None
+    description: Optional[str] = None
+    developers: Optional[List[Person]] = None
+    full_documentation: Optional[AnyHttpUrl] = None
+    homepage: Optional[AnyHttpUrl] = None
+    keywords: Optional[List[str]] = None
+                         # temporarily allow None, but really location should always be present
+    location: Optional[AnyUrl] = None
+    name: Optional[str] = None
     project_id: str
-    type: WorkflowRecipeType = None  # temporarily allow None
+    type: Optional[WorkflowRecipeType] = None  # temporarily allow None
     version_identifier: str
-    version_innovation: str = None
+    version_innovation: Optional[str] = None
 
     @classmethod
     def from_kg_object(cls, recipe_version, client):
         parents = omcmp.WorkflowRecipe.list(
             client,
-            scope="any",
+            release_status="any",
             # space=recipe_version.space,
             versions=recipe_version,
         )
@@ -92,7 +88,7 @@ class WorkflowRecipe(BaseModel):
             ]
         if recipe_version.format:
             type_ = content_type_lookup.get(
-                recipe_version.format.resolve(client, scope="any").name, None
+                recipe_version.format.resolve(client, release_status="any").name, None
             )
         else:
             type_ = None
@@ -104,7 +100,7 @@ class WorkflowRecipe(BaseModel):
             homepage = None
         location = None
         if recipe_version.repository:
-            repo_obj = recipe_version.repository.resolve(client, scope="any")
+            repo_obj = recipe_version.repository.resolve(client, release_status="any")
             if repo_obj:
                 location = str(repo_obj.iri)
         return cls(
@@ -130,6 +126,7 @@ class WorkflowRecipe(BaseModel):
             format = omterms.ContentType.by_name(content_type_name, client)
         else:
             format = None
+        location = str(self.location)
         return omcmp.WorkflowRecipeVersion(
             full_name=self.name,
             short_name=self.alias,
@@ -153,10 +150,10 @@ class WorkflowRecipe(BaseModel):
             # related_publications',
             # release_date',
             repository=omcore.FileRepository(
-                name=get_repository_name(self.location),
-                iri=get_repository_iri(self.location),
-                hosted_by=get_repository_host(self.location),
-                type=get_repository_type(self.location),
+                name=get_repository_name(location),
+                iri=get_repository_iri(location),
+                hosted_by=get_repository_host(location),
+                type=get_repository_type(location),
             ),
             # support_channels',
             version_identifier=self.version_identifier,
@@ -165,17 +162,16 @@ class WorkflowRecipe(BaseModel):
 
 
 class WorkflowRecipePatch(BaseModel):
-    name: str = None
-    alias: str = None
-    custodians: List[Person] = None
-    description: str = None
-    developers: List[Person] = None
-    type: WorkflowRecipeType = (
-        None  # temporarily allow none, until new content types added
-    )
-    full_documentation: AnyHttpUrl = None
-    homepage: AnyHttpUrl = None
-    keywords: List[str] = None
+    name: Optional[str] = None
+    alias: Optional[str] = None
+    custodians: Optional[List[Person]] = None
+    description: Optional[str] = None
+    developers: Optional[List[Person]] = None
+    # temporarily allow none, until new content types added
+    type: Optional[WorkflowRecipeType] = None
+    full_documentation: Optional[AnyHttpUrl] = None
+    homepage: Optional[AnyHttpUrl] = None
+    keywords: Optional[List[str]] = None
     location: AnyUrl
     version_identifier: str
-    version_innovation: str = None
+    version_innovation: Optional[str] = None

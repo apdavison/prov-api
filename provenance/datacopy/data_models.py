@@ -21,11 +21,11 @@ docstring goes here
 
 import logging
 from uuid import UUID, uuid4
-from typing import Literal, List, Union
+from typing import ClassVar, Literal, List, Union
 
 from pydantic import Field
 
-from fairgraph import KGProxy
+from fairgraph import KGProxy, KGObject
 from fairgraph.utility import as_list
 
 import fairgraph.openminds.computation as omcmp
@@ -44,7 +44,7 @@ logger = logging.getLogger("ebrains-prov-api")
 
 class DataCopy(Computation):
     """Record of a data copy operation"""
-    kg_cls = omcmp.DataCopy
+    kg_cls: ClassVar[KGObject] = omcmp.DataCopy
 
     input: List[Union[File, FileReference, ModelVersionReference, DatasetVersionReference, SoftwareVersion]] = Field(...,
         description="Items to be copied (models, datasets, data files, and/or software)")  # todo: add ValidationTestVersion
@@ -53,13 +53,13 @@ class DataCopy(Computation):
     @classmethod
     def from_kg_object(cls, data_copy_object, client):
         if isinstance(data_copy_object, KGProxy):
-            data_copy_object = data_copy_object.resolve(client, scope="any")
+            data_copy_object = data_copy_object.resolve(client, release_status="any")
         assert isinstance(data_copy_object, omcmp.DataCopy)
-        obj = data_copy_object.resolve(client, scope="any")
+        obj = data_copy_object.resolve(client, release_status="any")
         inputs = []
         for input in as_list(obj.inputs):
             if isinstance(input, KGProxy):
-                input = input.resolve(client, scope="any")
+                input = input.resolve(client, release_status="any")
             if isinstance(input, (omcore.File, omcmp.LocalFile)):
                 inputs.append(File.from_kg_object(input, client))
             elif isinstance(input, omcore.SoftwareVersion):
@@ -100,7 +100,7 @@ class DataCopy(Computation):
         resource_usage = [ru.to_kg_object(client) for ru in self.resource_usage]
         recipe_obj = None
         if self.recipe_id:
-            recipe_obj = omcmp.WorkflowRecipeVersion.from_uuid(str(self.recipe_id), client, scope="any")
+            recipe_obj = omcmp.WorkflowRecipeVersion.from_uuid(str(self.recipe_id), client, release_status="any")
         if self.id is None:
             self.id = uuid4()
         obj = self.__class__.kg_cls(

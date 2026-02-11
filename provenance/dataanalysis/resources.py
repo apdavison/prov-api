@@ -97,7 +97,7 @@ def query_analyses(
     # filter by simulation
     if simulation:
         # todo: add a query for released simulations
-        simulation_obj = omcmp.Simulation.from_id(str(simulation), kg_client, scope="any")
+        simulation_obj = omcmp.Simulation.from_id(str(simulation), kg_client, release_status="any")
         if simulation_obj is None:
             raise HTTPException(
                 status_code=status_codes.HTTP_404_NOT_FOUND,
@@ -110,14 +110,15 @@ def query_analyses(
     # filter by software
     if software:
         filters["inputs"].extend(as_list(software))
-        environments = omcmp.Environment.list(kg_client, software=software, scope="any", space=space)
+        environments = omcmp.Environment.list(kg_client, software=software, release_status="any", space=space)
         filters["environment"].extend(as_list(environments))
     # filter by hardware platform
     if platform:
-        hardware_obj = omcmp.HardwareSystem.by_name(platform.value, kg_client, scope="any", space="common")
+        hardware_obj = omcmp.HardwareSystem.by_name(platform.value, kg_client, release_status="any", space="common")
         # todo: handle different versions of hardware platforms
-        environments = omcmp.Environment.list(kg_client, hardware=hardware_obj, scope="any", space=space)
+        environments = omcmp.Environment.list(kg_client, hardware=hardware_obj, release_status="any", space=space)
         filters["environment"].extend(as_list(environments))
+        # breakpoint()
     # filter by status
     if status:
         filters["status"] = ACTION_STATUS_TYPES[status.value]
@@ -133,7 +134,7 @@ def query_analyses(
 
     if len(filters) == 1:
         # common, simple case
-        data_analysis_objects = omcmp.DataAnalysis.list(kg_client, scope="any", api="query",
+        data_analysis_objects = omcmp.DataAnalysis.list(kg_client, release_status="any", api="query",
                                                         size=size, from_index=from_index,
                                                         space=space, **filters[0])
     else:
@@ -141,7 +142,7 @@ def query_analyses(
         # inefficient if from_index is not 0
         data_analysis_objects = {}
         for filter in filters:
-            results = omcmp.DataAnalysis.list(kg_client, scope="any", api="query",
+            results = omcmp.DataAnalysis.list(kg_client, release_status="any", api="query",
                                               size=size, from_index=from_index,
                                               space=space, **filter)
             for result in results:
@@ -174,7 +175,7 @@ def get_data_analysis(analysis_id: UUID, token: HTTPAuthorizationCredentials = D
     """
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        data_analysis_object = omcmp.DataAnalysis.from_uuid(str(analysis_id), kg_client, scope="any")
+        data_analysis_object = omcmp.DataAnalysis.from_uuid(str(analysis_id), kg_client, release_status="any")
     except TypeError as err:
         raise NotFoundError("data analysis", analysis_id)
     if data_analysis_object is None:

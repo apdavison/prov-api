@@ -1,5 +1,8 @@
+from decimal import Decimal
 from uuid import uuid4
 import itertools
+from typing import Union
+
 from fastapi import HTTPException, status
 
 import fairgraph.openminds.computation as omcmp
@@ -14,7 +17,7 @@ def create_computation(pydantic_cls, fairgraph_cls, pydantic_obj, space, token, 
     kg_client = get_kg_client_for_user_account(token.credentials)
     if pydantic_obj.id is not None:
         try:
-            kg_computation_object = fairgraph_cls.from_uuid(str(pydantic_obj.id), kg_client, scope="any")
+            kg_computation_object = fairgraph_cls.from_uuid(str(pydantic_obj.id), kg_client, release_status="any")
         except fairgraph.errors.AuthenticationError:
             raise AuthenticationError()
         if kg_computation_object is not None:
@@ -29,7 +32,7 @@ def create_computation(pydantic_cls, fairgraph_cls, pydantic_obj, space, token, 
             background_tasks.add_task(kg_computation_object.save, kg_client, space=space, recursive=True)
     else:
         try:
-            kg_computation_object.save(kg_client, space=space, recursive=True)
+            kg_computation_object.save(kg_client, space=space, recursive=True, ignore_duplicates=True)
         except fairgraph.errors.AuthenticationError:
             raise AuthenticationError()
     if background_tasks:
@@ -41,7 +44,7 @@ def create_computation(pydantic_cls, fairgraph_cls, pydantic_obj, space, token, 
 def replace_computation(pydantic_cls, fairgraph_cls, computation_id, pydantic_obj, token):
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        kg_computation_object = fairgraph_cls.from_uuid(str(computation_id), kg_client, scope="any")
+        kg_computation_object = fairgraph_cls.from_uuid(str(computation_id), kg_client, release_status="any")
     except fairgraph.errors.AuthenticationError:
         raise AuthenticationError()
 
@@ -65,7 +68,7 @@ def replace_computation(pydantic_cls, fairgraph_cls, computation_id, pydantic_ob
 def patch_computation(pydantic_cls, fairgraph_cls, computation_id, patch, token):
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        kg_computation_object = fairgraph_cls.from_uuid(str(computation_id), kg_client, scope="any")
+        kg_computation_object = fairgraph_cls.from_uuid(str(computation_id), kg_client, release_status="any")
     except fairgraph.errors.AuthenticationError:
         raise AuthenticationError()
 
@@ -88,7 +91,7 @@ def patch_computation(pydantic_cls, fairgraph_cls, computation_id, patch, token)
 def delete_computation(fairgraph_cls, computation_id, token):
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        kg_computation_object = fairgraph_cls.from_uuid(str(computation_id), kg_client, scope="any")
+        kg_computation_object = fairgraph_cls.from_uuid(str(computation_id), kg_client, release_status="any")
     except fairgraph.errors.AuthenticationError:
         raise AuthenticationError()
 
@@ -131,3 +134,13 @@ def collab_id_from_space(space):
         return space[7:]
     else:
         return space
+
+
+def decimal_encoder(dec_value: Decimal) -> Union[int, float]:
+    """Encodes a Decimal as int if there is no exponent, otherwise float."""
+    # Code taken from Pydantic v1
+    exponent = dec_value.as_tuple().exponent
+    if isinstance(exponent, int) and exponent >= 0:
+        return int(dec_value)
+    else:
+        return float(dec_value)

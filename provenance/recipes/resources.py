@@ -57,7 +57,7 @@ def query_workflow_recipes(
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
         recipes = omcmp.WorkflowRecipeVersion.list(
-            kg_client, scope="any", space=space, api="core",
+            kg_client, release_status="any", space=space, api="core",
             from_index=from_index, size=size)
     except fairgraph.errors.AuthenticationError:
         raise AuthenticationError()
@@ -74,7 +74,7 @@ def get_workflow_recipe(recipe_id: UUID, token: HTTPAuthorizationCredentials = D
     """
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        recipe_object = omcmp.WorkflowRecipeVersion.from_uuid(str(recipe_id), kg_client, scope="any")
+        recipe_object = omcmp.WorkflowRecipeVersion.from_uuid(str(recipe_id), kg_client, release_status="any")
     except TypeError as err:
         raise NotFoundError("workflow recipe", recipe_id)
     except fairgraph.errors.AuthenticationError:
@@ -96,7 +96,7 @@ def create_workflow_recipe(
     kg_client = get_kg_client_for_user_account(token.credentials)
     requested_recipe_uuid = None
     if recipe.id is not None:
-        kg_recipe_version = omcmp.WorkflowRecipeVersion.from_uuid(str(recipe.id), kg_client, scope="any")
+        kg_recipe_version = omcmp.WorkflowRecipeVersion.from_uuid(str(recipe.id), kg_client, release_status="any")
         if kg_recipe_version is not None:
             raise HTTPException(
                 status_code=status_codes.HTTP_400_BAD_REQUEST,
@@ -123,7 +123,7 @@ def create_workflow_recipe(
     # try to figure out if this is a new version of an existing recipe
     # todo in future: also search released workflow recipe
     alternative_versions = None
-    parent_workflow = omcmp.WorkflowRecipe.list(kg_client, space=space, scope="any",
+    parent_workflow = omcmp.WorkflowRecipe.list(kg_client, space=space, release_status="any",
                                                 name=recipe.name)
     if parent_workflow:
         if len(parent_workflow) > 1:
@@ -138,7 +138,7 @@ def create_workflow_recipe(
         else:
             parent_workflow = None
     if parent_workflow:
-        parent_workflow.resolve(kg_client, scope="any", follow_links=1)
+        parent_workflow.resolve(kg_client, release_status="any", follow_links={"versions": {}})
         if parent_workflow.versions:
             alternative_versions = sorted(
                 as_list(parent_workflow.versions),
@@ -153,7 +153,7 @@ def create_workflow_recipe(
             description=kg_recipe_version.description,
             developers=kg_recipe_version.developers,
             versions=[kg_recipe_version])
-    kg_recipe_version.save(kg_client, space=space, recursive=True)
+    kg_recipe_version.save(kg_client, space=space, recursive=True, ignore_duplicates=True)
     parent_workflow.save(kg_client, space=parent_workflow.space or space, recursive=False)
     return WorkflowRecipe.from_kg_object(kg_recipe_version, kg_client)
 

@@ -18,7 +18,7 @@ docstring goes here
    limitations under the License.
 """
 
-from typing import List, Union, Any
+from typing import ClassVar, List, Union, Optional
 from uuid import UUID
 from typing_extensions import Annotated
 
@@ -26,7 +26,7 @@ import json
 import logging
 from pydantic import BaseModel, Field
 
-from fairgraph import KGProxy
+from fairgraph import KGProxy, KGObject
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.computation as omcmp
 from fairgraph.errors import ResolutionFailure
@@ -55,18 +55,18 @@ _Computation = Annotated[
 
 
 class WorkflowExecution(BaseModel):
-    kg_cls = omcmp.WorkflowExecution
+    kg_cls: ClassVar[KGObject] = omcmp.WorkflowExecution
 
-    id: UUID = None
-    configuration: dict = None
-    project_id: str = None
-    recipe_id: UUID = None
+    id: Optional[UUID] = None
+    configuration: Optional[dict] = None
+    project_id: Optional[str] = None
+    recipe_id: Optional[UUID] = None
     stages: List[_Computation] = Field(
         ...,
         description="A workflow record is specified by the list of computations that were carried out. "
                     "The sequence of computations is inferred from the inputs, outputs and start times of each stage."
     )
-    started_by: Person = None
+    started_by: Optional[Person] = None
 
 
     @classmethod
@@ -82,7 +82,7 @@ class WorkflowExecution(BaseModel):
         }
         def get_class(obj):
             if isinstance(obj, KGProxy):
-                robj = obj.resolve(client, scope="any")
+                robj = obj.resolve(client, release_status="any")
                 return robj.__class__
             else:
                 return obj.__class__
@@ -93,7 +93,7 @@ class WorkflowExecution(BaseModel):
         config = None
         if weo.configuration:
             try:
-                config_obj = weo.configuration.resolve(client, scope="any")
+                config_obj = weo.configuration.resolve(client, release_status="any")
             except ResolutionFailure as err:
                 logger.debug(err)
                 config_obj = None
@@ -118,7 +118,7 @@ class WorkflowExecution(BaseModel):
             started_by = omcore.Person.me(client)
         stages = [stage.to_kg_object(client) for stage in self.stages]
         if self.recipe_id:
-            recipe = omcmp.WorkflowRecipeVersion.from_id(str(self.recipe_id), client, scope="any")  # todo: also search scope="released"
+            recipe = omcmp.WorkflowRecipeVersion.from_id(str(self.recipe_id), client, release_status="any")  # todo: also search release_status="released"
         else:
             recipe = None
         # todo: error message if recipe is not found
@@ -130,8 +130,7 @@ class WorkflowExecution(BaseModel):
             configuration=omcore.Configuration(
                 lookup_label=f"Configuration for workflow execution {self.id}",
                 configuration=json.dumps(self.configuration, indent=2),
-                format=KGProxy(cls=omcore.ContentType,  # application/json
-                               uri="https://kg.ebrains.eu/api/instances/098cd755-65bc-4e77-b3eb-7a940fff829a")
+                format=omcore.ContentType.application_json
             )
         )
         return obj

@@ -1,4 +1,5 @@
 __pycache__
+*.pyc
 
 # ensure files containing secrets aren't tracked
 env_local.sh

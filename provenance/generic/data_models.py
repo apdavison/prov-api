@@ -20,7 +20,8 @@ docstring goes here
 
 
 import logging
-from typing import Literal
+from typing import ClassVar, Literal
+from fairgraph import KGObject
 from fairgraph.openminds.computation import Visualization as KGVisualization
 from ..dataanalysis.data_models import DataAnalysis, DataAnalysisPatch
 
@@ -29,11 +30,11 @@ logger = logging.getLogger("ebrains-prov-api")
 
 class GenericComputation(DataAnalysis):
     """Record of a computation that cannot be classified"""
-    kg_cls = KGVisualization
+    kg_cls: ClassVar[KGObject] = KGVisualization
 
     type: Literal["unknown"]
 
 
 class GenericComputationPatch(DataAnalysisPatch):
     """Correction of or update to a record of a generic computation"""
-    kg_cls = KGVisualization
+    kg_cls: ClassVar[KGObject] = KGVisualization

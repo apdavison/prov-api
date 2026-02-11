@@ -19,25 +19,20 @@ docstring goes here
 """
 
 from enum import Enum
-from os import environ
 from uuid import UUID
-from typing import List, Union, Optional, Any
+from typing import List, Union, Optional
 import re
 import hashlib
 import json
 import logging
 
-try:
-    from typing import Literal  # Python >= 3.8
-except ImportError:
-    from typing_extensions import Literal
 from decimal import Decimal
 from datetime import datetime
-from pydantic import BaseModel, AnyUrl, Field, Json
+from pydantic import BaseModel, AnyUrl, Field, field_serializer, SerializerFunctionWrapHandler
+
 
 from fairgraph import KGProxy, IRI
 from fairgraph.utility import as_list
-#from fairgraph.openminds import controlled_terms
 from fairgraph.openminds.core.miscellaneous.quantitative_value import QuantitativeValue
 import fairgraph.openminds.core as omcore
 import fairgraph.openminds.computation as omcmp
@@ -45,6 +40,7 @@ from fairgraph.openminds.controlled_terms import FileRepositoryType, UnitOfMeasu
 from fairgraph.errors import ResolutionFailure
 
 from .examples import EXAMPLES
+from .utils import decimal_encoder
 from ..auth.utils import get_kg_client_for_service_account
 
 logger = logging.getLogger("ebrains-prov-api")
@@ -61,7 +57,7 @@ status_name_map = {
 
 def _get_action_status_types():
     kg_client_service_account = get_kg_client_for_service_account()
-    return ActionStatusType.list(kg_client_service_account, scope="released",
+    return ActionStatusType.list(kg_client_service_account, release_status="released",
                                  api="core", space="controlled", size=10)
 
 
@@ -93,7 +89,7 @@ def get_identifier(iri, prefix):
 def _get_units_of_measurement():
     # pre-fetch units of measurement
     kg_client_service_account = get_kg_client_for_service_account()
-    units_objects = UnitOfMeasurement.list(kg_client_service_account, api="core", scope="released", space="controlled")
+    units_objects = UnitOfMeasurement.list(kg_client_service_account, api="core", release_status="released", space="controlled")
     # the follow addition is a temporary workaround with a locally-generated id until core-hour is added
     units_objects.append(UnitOfMeasurement(name="core-hour", id="https://kg.ebrains.eu/api/instances/686f4d65-bdc7-4f69-bf32-4c9f09028541"))
     return units_objects
@@ -110,7 +106,7 @@ UNITS = {u: unit_obj for u, unit_obj in zip(Units, UNITS)}
 
 def _get_content_types():
     kg_client_service_account = get_kg_client_for_service_account()
-    content_types = omcore.ContentType.list(kg_client_service_account, api="core", scope="released", space="controlled", size=10000)
+    content_types = omcore.ContentType.list(kg_client_service_account, api="core", release_status="released", space="controlled", size=10000)
     return content_types
 
 
@@ -145,7 +141,7 @@ class Digest(BaseModel):
 def _get_hosting_organizations():
     kg_client_service_account = get_kg_client_for_service_account()
     hosting_orgs = {
-        name: omcore.Organization.list(kg_client_service_account, scope="any", space="common", short_name=name)[0]
+        name: omcore.Organization.list(kg_client_service_account, release_status="any", space="common", short_name=name)[0]
         for name in ("EBRAINS", "GitHub", "Yale", "EBI", "CERN", "CSCS", "CNRS", "University of Manchester", "KIP")
     }
     # CSCS = KGProxy(omcore.Organization, "https://kg.ebrains.eu/api/instances/e3f16a1a-184e-447d-aced-375c00ec4d41")
@@ -247,7 +243,7 @@ def get_repository_name(url):
 def _get_repository_types():
     kg_client_service_account = get_kg_client_for_service_account()
     return {
-        obj.name: obj for obj in FileRepositoryType.list(kg_client_service_account, scope="released")
+        obj.name: obj for obj in FileRepositoryType.list(kg_client_service_account, release_status="released")
     }
 
 REPOSITORY_TYPES = _get_repository_types()
@@ -274,21 +270,22 @@ class File(BaseModel):
     description: Optional[str] = Field(None, title="Description of the file contents")
     file_name: str
     format: Optional[ContentType] = Field(None, title="Content type of the file, expressed as a media type string")
-    hash: Digest = None
-    location: AnyUrl = None  # for files generated within workflows but not preserved, location may be None
+    hash: Optional[Digest] = None
+    location: Optional[AnyUrl] = None  # for files generated within workflows but not preserved, location may be None
     size: Optional[int] = Field(None, title="File size in bytes")
     # bundle
     # repository
 
-    class Config:
-        schema_extra = {"example": EXAMPLES["File"]}
+    model_config = {
+        "json_schema_extra": {"example": EXAMPLES["File"]}
+    }
 
     @classmethod
     def from_kg_object(cls, file_object, client):
         if isinstance(file_object, KGProxy):
-            file_object = file_object.resolve(client, scope="any")
+            file_object = file_object.resolve(client, release_status="any")
         if file_object.format:
-            name = file_object.format.resolve(client, scope="any").name
+            name = file_object.format.resolve(client, release_status="any").name
             format = ContentType(name)
         else:
             format = None
@@ -320,12 +317,13 @@ class File(BaseModel):
         )
 
     def to_kg_object(self, client):
-        if self.location and self.location.startswith("http") and self.hash:
+        if self.location and self.location.scheme.startswith("http") and self.hash:
+            location = str(self.location)
             file_repository = omcore.FileRepository(
-                hosted_by=get_repository_host(self.location),
-                iri=get_repository_iri(self.location),
-                name=get_repository_name(self.location),
-                type=get_repository_type(self.location)
+                hosted_by=get_repository_host(location),
+                iri=get_repository_iri(location),
+                name=get_repository_name(location),
+                type=get_repository_type(location)
             )
         else:
             file_repository = None
@@ -347,14 +345,14 @@ class File(BaseModel):
                 file_repository=file_repository,
                 format=content_type,
                 hash=hash,
-                iri=IRI(self.location),
+                iri=IRI(str(location)),
                 name=self.file_name,
                 storage_size=storage_size,
                 content_description=self.description
             )
         else:
             if self.location:
-                path = self.location.replace("file://", "")
+                path = str(self.location).replace("file://", "")
             else:
                 path = self.file_name
             file_obj = omcmp.LocalFile(
@@ -370,7 +368,7 @@ class File(BaseModel):
 
 def _get_hardware_systems():
     kg_client_service_account = get_kg_client_for_service_account()
-    hardware_systems = omcmp.HardwareSystem.list(kg_client_service_account, scope="any", space="common")
+    hardware_systems = omcmp.HardwareSystem.list(kg_client_service_account, release_status="any", space="common")
     for obj in hardware_systems:
         obj.allow_update = False
     return {
@@ -393,13 +391,14 @@ class StringParameter(BaseModel):
     name: str
     value: str
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "name": "method",
                 "value": "simulated_annealing"
             }
         }
+    }
 
     @classmethod
     def from_kg_object(cls, param):
@@ -417,16 +416,21 @@ class NumericalParameter(BaseModel):
 
     name: str
     value: Decimal
-    units: Units = None
+    units: Optional[Units] = None
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "name": "Rm",
                 "value": 100.3,
                 "units": "MΩ"
             }
         }
+    }
+
+    @field_serializer("value", mode="wrap")
+    def serialize_decimal(self, value: Decimal, handler: SerializerFunctionWrapHandler):
+        return decimal_encoder(value)
 
     def __str__(self):
         return f"{self.name} = {self.value} {self.units}"
@@ -450,7 +454,7 @@ class ParameterSet(BaseModel):
     """A collection of parameters"""
 
     items: List[Union[StringParameter, NumericalParameter]]
-    description: str = None
+    description: Optional[str] = None
 
     @property
     def identifier(self):
@@ -486,20 +490,21 @@ class Person(BaseModel):
 
     given_name: str
     family_name: str
-    orcid: str = None
+    orcid: Optional[str] = None
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "family_name": "Destexhe",
                 "given_name": "Alain",
                 "orcid": "https://orcid.org/0000-0001-7405-0455"
             }
         }
+    }
 
     @classmethod
     def from_kg_object(cls, person, client):
-        person = person.resolve(client, scope="any")
+        person = person.resolve(client, release_status="any")
         orcid = None
         if person.digital_identifiers:
             for digid in as_list(person.digital_identifiers):
@@ -507,7 +512,7 @@ class Person(BaseModel):
                     orcid = digid.identifier
                     break
                 elif isinstance(digid, KGProxy) and digid.cls == omcore.ORCID:
-                    orcid = digid.resolve(client, scope="any").identifier
+                    orcid = digid.resolve(client, release_status="any").identifier
                     break
         return cls(given_name=person.given_name, family_name=person.family_name,
                    orcid=orcid)
@@ -528,19 +533,24 @@ class ResourceUsage(BaseModel):
     value: Decimal
     units: Units
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "value": 1017.3,
                 "units": "core-hour"
             }
         }
+    }
+
+    @field_serializer("value", mode="wrap")
+    def serialize_decimal(self, value: Decimal, handler: SerializerFunctionWrapHandler):
+        return decimal_encoder(value)
 
     @classmethod
     def from_kg_object(cls, resource_usage, client):
         return cls(
             value=resource_usage.value,
-            units=Units(resource_usage.unit.resolve(client, scope="any").name)
+            units=Units(resource_usage.unit.resolve(client, release_status="any").name)
         )
 
     def to_kg_object(self, client):
@@ -551,21 +561,22 @@ class ResourceUsage(BaseModel):
 class SoftwareVersion(BaseModel):
     """Minimal representation of a specific piece of software"""
 
-    id: UUID = None
+    id: Optional[UUID] = None
     software_name: str
     software_version: str
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "software_name": "NEST",
                 "software_version": "2.20.0"
             }
         }
+    }
 
     @classmethod
     def from_kg_object(cls, software_version_object, client):
-        svo = software_version_object.resolve(client, scope="any")
+        svo = software_version_object.resolve(client, release_status="any")
         return cls(
             id=client.uuid_from_uri(svo.id),
             software_name=svo.name,
@@ -584,7 +595,7 @@ class SoftwareVersion(BaseModel):
 class ComputationalEnvironment(BaseModel):
     """The environment within which a computation takes place"""
 
-    id: UUID = None
+    id: Optional[UUID] = None
     name: str = Field(..., description="A name/label for this computing environment")
     hardware: HardwareSystem = Field(..., description="The hardware system on which this environment runs")
     configuration: Optional[dict] = Field(None, description="All important hardware settings defining this environment")
@@ -593,23 +604,24 @@ class ComputationalEnvironment(BaseModel):
     ]] = Field(None, description="All software versions available in this environment. Note that the Analysis/Simulation schemas allow storing a list of software versions actually _used_ in a computation")
     description: Optional[str] = Field(None, description="A description of this computing environment")
 
-    class Config:
-        schema_extra = {"example": EXAMPLES["ComputationalEnvironment"]}
+    model_config = {
+        "json_schema_extra": {"example": EXAMPLES["ComputationalEnvironment"]}
+    }
 
     @classmethod
     def from_kg_object(cls, env_object, client):
-        env = env_object.resolve(client, scope="any")
+        env = env_object.resolve(client, release_status="any")
         hardware = None
         config = None
         if env:
             if env.hardware:
-                hardware_obj = env.hardware.resolve(client, scope="any")
+                hardware_obj = env.hardware.resolve(client, release_status="any")
                 if hardware_obj:
                     hardware = HardwareSystem(hardware_obj.name)
 
             if env.configuration:
                 try:
-                    config_obj = env.configuration.resolve(client, scope="any")
+                    config_obj = env.configuration.resolve(client, release_status="any")
                 except ResolutionFailure as err:
                     logger.debug("err")
                     config = None
@@ -631,7 +643,7 @@ class ComputationalEnvironment(BaseModel):
             hardware=HARDWARE_SYSTEMS[self.hardware.value],
             configuration=omcore.Configuration(
                 configuration=json.dumps(self.configuration, indent=2),
-                format=omcore.ContentType(name="application/json")
+                format=omcore.ContentType.application_json
             ),
             software=[sv.to_kg_object(client) for sv in as_list(self.software)],
             description=self.description
@@ -649,8 +661,9 @@ class LaunchConfiguration(BaseModel):
     executable: str = Field(..., description="Path to the command-line executable")
     name: Optional[str] = Field(None, description="Label for this launch configuration")
 
-    class Config:
-        schema_extra = {"example": EXAMPLES["LaunchConfiguration"]}
+    model_config = {
+        "json_schema_extra": {"example": EXAMPLES["LaunchConfiguration"]}
+    }
 
     @property
     def identifier(self):
@@ -666,7 +679,7 @@ class LaunchConfiguration(BaseModel):
 
     @classmethod
     def from_kg_object(cls, launch_config_object, client):
-        lco = launch_config_object.resolve(client, scope="any")
+        lco = launch_config_object.resolve(client, release_status="any")
         if lco.environment_variables:
             env = ParameterSet.from_kg_object(lco.environment_variables, client)
         else:
@@ -702,19 +715,19 @@ class Computation(BaseModel):
     """
 
     id: Optional[UUID] = Field(None, description="IDs should be valid UUID v4 identifiers. If an ID is not supplied it will be generated by the Knowledge Graph")
-    description: str = None
-    end_time: datetime = None
+    description: Optional[str] = None
+    end_time: Optional[datetime] = None
     environment: ComputationalEnvironment
     input: List[Union[File, SoftwareVersion]] = Field(..., description="Inputs to this computation (data files and/or code)")
     launch_config: LaunchConfiguration
     output: List[File] = Field(..., description="Files generated by this computation")
-    project_id: str = None
-    recipe_id: UUID = None
-    resource_usage: List[ResourceUsage] = None
+    project_id: Optional[str] = None
+    recipe_id: Optional[UUID] = None
+    resource_usage: Optional[List[ResourceUsage]] = None
     started_by: Optional[Person] = Field(None, description="If this field is left blank it is assumed that the account used to upload the provenance metadata is the same as that used to launch the computation")
     start_time: datetime
-    status: Status = None
-    tags: List[str] = None
+    status: Optional[Status] = None
+    tags: Optional[List[str]] = None
 
 
 class ComputationPatch(Computation):
@@ -722,17 +735,17 @@ class ComputationPatch(Computation):
     Abstract base class, should not appear in documentation
     """
 
-    input: List[Union[File, SoftwareVersion]] = None
-    output: List[File] = None
-    environment: ComputationalEnvironment = None
-    launch_config: LaunchConfiguration = None
-    start_time: datetime = None
-    end_time: datetime = None
-    started_by: Person = None
-    status: Status = None
-    resource_usage: List[ResourceUsage] = None
-    tags: List[str] = None
-    recipe_id: UUID = None
+    input: Optional[List[Union[File, SoftwareVersion]]] = None
+    output: Optional[List[File]] = None
+    environment: Optional[ComputationalEnvironment] = None
+    launch_config: Optional[LaunchConfiguration] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    started_by: Optional[Person] = None
+    status: Optional[Status] = None
+    resource_usage: Optional[List[ResourceUsage]] = None
+    tags: Optional[List[str]] = None
+    recipe_id: Optional[UUID] = None
 
 
 class ModelVersionReference(BaseModel):
@@ -750,7 +763,7 @@ class ModelVersionReference(BaseModel):
         return cls(model_version_id=UUID(model_version.uuid))
 
     def to_kg_object(self, client):
-        return omcore.ModelVersion.from_uuid(str(self.model_version_id), client, scope="any")
+        return omcore.ModelVersion.from_uuid(str(self.model_version_id), client, release_status="any")
 
 
 class DatasetVersionReference(BaseModel):
@@ -767,7 +780,7 @@ class DatasetVersionReference(BaseModel):
         return cls(dataset_version_id=UUID(dataset_version.uuid))
 
     def to_kg_object(self, client):
-        return omcore.DatasetVersion.from_uuid(str(self.dataset_version_id), client, scope="any")
+        return omcore.DatasetVersion.from_uuid(str(self.dataset_version_id), client, release_status="any")
 
 
 class FileReference(BaseModel):
@@ -783,5 +796,5 @@ class FileReference(BaseModel):
         raise NotImplementedError()
 
     def to_kg_object(self, client):
-        dataset_version = omcore.DatasetVersion.from_id(str(self.dataset_version_id), client, scope="any", follow_links={"repository": {"files": {}}})
+        dataset_version = omcore.DatasetVersion.from_id(str(self.dataset_version_id), client, release_status="any", follow_links={"repository": {"files": {}}})
         return [file_ for file_ in dataset_version.repository.files if self.datafile_path in str(file_.iri)][0]

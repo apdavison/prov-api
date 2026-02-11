@@ -27,21 +27,19 @@ EXAMPLES = {
         "environment": {
             "name": "Piz Daint 2022",
             "hardware": "Piz Daint",
-            "configuration": [
-                {
-                    "items": [
-                        {
-                            "name": "parameter1",
-                            "value": "value1"
-                        },
-                        {
-                            "name": "parameter2",
-                            "value": "value2"
-                        }
-                    ],
-                    "description": "hardware configuration for Piz Daint in 2022"
-                }
-            ],
+            "configuration": {
+                "items": [
+                    {
+                        "name": "parameter1",
+                        "value": "value1"
+                    },
+                    {
+                        "name": "parameter2",
+                        "value": "value2"
+                    }
+                ],
+                "description": "hardware configuration for Piz Daint in 2022"
+            },
             "software": [
                 {
                     "software_name": "numpy",

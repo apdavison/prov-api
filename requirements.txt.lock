@@ -1,6 +1,6 @@
-uvicorn==0.17.6
-fastapi==0.75.0
-itsdangerous==2.1.1
-Authlib==1.0.0
-httpx==0.22.0
-fairgraph==0.12.2
+uvicorn==0.38.0
+fastapi==0.121.0
+itsdangerous==2.2.0
+Authlib==1.6.5
+httpx==0.28.1
+fairgraph==0.13.2

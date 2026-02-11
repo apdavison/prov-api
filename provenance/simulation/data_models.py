@@ -21,11 +21,11 @@ docstring goes here
 import logging
 from enum import Enum
 from uuid import UUID, uuid4
-from typing import List, Union, Literal
+from typing import ClassVar, List, Union, Literal
 
 from pydantic import Field
 
-from fairgraph import KGProxy
+from fairgraph import KGProxy, KGObject
 from fairgraph.utility import as_list
 import fairgraph.openminds.computation as omcmp
 import fairgraph.openminds.core as omcore
@@ -66,7 +66,7 @@ class Simulator(str, Enum):
 
 class Simulation(Computation):
     """Record of a numerical simulation"""
-    kg_cls = omcmp.Simulation
+    kg_cls: ClassVar[KGObject] = omcmp.Simulation
 
     input: List[Union[File, ModelVersionReference, SoftwareVersion]] = Field(...,
         description="Inputs to this simulation (models, data files, configuration files and/or code)")
@@ -74,18 +74,17 @@ class Simulation(Computation):
 
     # informed_by: "SimulationNew" = None
 
-    class Config:
-        schema_extra = EXAMPLES["Simulation"]
+    model_config = {"json_schema_extra": EXAMPLES["Simulation"]}
 
     @classmethod
     def from_kg_object(cls, simulation_object, client):
         if isinstance(simulation_object, KGProxy):
-            simulation_object = simulation_object.resolve(client, scope="any")
+            simulation_object = simulation_object.resolve(client, release_status="any")
         assert isinstance(simulation_object, omcmp.Simulation)
         inputs = []
         for obj in as_list(simulation_object.inputs):
             if isinstance(obj, KGProxy):
-                obj = obj.resolve(client, scope="any")
+                obj = obj.resolve(client, release_status="any")
             if isinstance(obj, (omcore.File, omcmp.LocalFile)):
                 inputs.append(File.from_kg_object(obj, client))
             elif isinstance(obj, omcore.SoftwareVersion):
@@ -96,7 +95,7 @@ class Simulation(Computation):
                 raise TypeError(f"unexpected object type in inputs: {type(obj)}")
         return cls(
             id=client.uuid_from_uri(simulation_object.id),
-            type=cls.__fields__["type"].type_.__args__[0],
+            type=cls.model_fields["type"].annotation.__args__[0],
             description=simulation_object.description,
             input=inputs,
             output=[File.from_kg_object(obj, client) for obj in as_list(simulation_object.outputs)],
@@ -127,7 +126,7 @@ class Simulation(Computation):
             resource_usage = None
         recipe_obj = None
         if self.recipe_id:
-            recipe_obj = omcmp.WorkflowRecipeVersion.from_uuid(str(self.recipe_id), client, scope="any")
+            recipe_obj = omcmp.WorkflowRecipeVersion.from_uuid(str(self.recipe_id), client, release_status="any")
         if self.id is None:
             self.id = uuid4()
         obj = self.__class__.kg_cls(
@@ -155,8 +154,8 @@ class SimulationPatch(ComputationPatch):
     input: List[Union[File, ModelVersionReference, SoftwareVersion]] = None
     # informed_by: "Simulation" = None
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "end_time": "2021-05-28T16:32:58.597Z",
                 "status": "failed",
@@ -171,3 +170,4 @@ class SimulationPatch(ComputationPatch):
                 ]
             }
         }
+    }

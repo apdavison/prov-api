@@ -21,10 +21,11 @@ docstring goes here
 
 import logging
 from uuid import UUID, uuid4
-from typing import Literal
-from fairgraph import KGProxy
+from typing import ClassVar, Literal
+from fairgraph import KGProxy, KGObject
 from fairgraph.utility import as_list
 
+from fairgraph import KGObject
 import fairgraph.openminds.computation as omcmp
 import fairgraph.openminds.core as omcore
 
@@ -39,20 +40,20 @@ logger = logging.getLogger("ebrains-prov-api")
 
 class Visualisation(Computation):
     """Record of a data analysis"""
-    kg_cls = omcmp.Visualization
+    kg_cls: ClassVar[KGObject] = omcmp.Visualization
 
     type: Literal["visualization"]
 
     @classmethod
     def from_kg_object(cls, visualization_object, client):
         if isinstance(visualization_object, KGProxy):
-            visualization_object = visualization_object.resolve(client, scope="any")
+            visualization_object = visualization_object.resolve(client, release_status="any")
         assert isinstance(visualization_object, omcmp.Visualization)
-        obj = visualization_object.resolve(client, scope="any")
+        obj = visualization_object.resolve(client, release_status="any")
         inputs = []
         for input in as_list(obj.inputs):
             if isinstance(input, KGProxy):
-                input = input.resolve(client, scope="any")
+                input = input.resolve(client, release_status="any")
             if isinstance(input, (omcore.File, omcmp.LocalFile)):
                 inputs.append(File.from_kg_object(input, client))
             elif isinstance(input, omcore.SoftwareVersion):
@@ -61,7 +62,7 @@ class Visualisation(Computation):
                 raise TypeError(f"unexpected object type in inputs: {type(input)}")
         return cls(
             id=client.uuid_from_uri(obj.id),  # just obj.uuid, no?
-            type=cls.__fields__["type"].type_.__args__[0],  # "data analysis"
+            type=cls.model_fields["type"].annotation.__args__[0],  # "data analysis"
             description=visualization_object.description,
             input=inputs,
             output=[File.from_kg_object(outp, client) for outp in as_list(obj.outputs)],
@@ -89,7 +90,7 @@ class Visualisation(Computation):
         resource_usage = [ru.to_kg_object(client) for ru in self.resource_usage]
         recipe_obj = None
         if self.recipe_id:
-            recipe_obj = omcmp.WorkflowRecipeVersion.from_uuid(str(self.recipe_id), client, scope="any")
+            recipe_obj = omcmp.WorkflowRecipeVersion.from_uuid(str(self.recipe_id), client, release_status="any")
         if self.id is None:
             self.id = uuid4()
         obj = self.__class__.kg_cls(

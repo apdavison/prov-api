@@ -65,7 +65,7 @@ def query_workflows(
     # todo: handle tags
     try:
         workflows = omcmp.WorkflowExecution.list(
-            kg_client, scope="any", space=space,
+            kg_client, release_status="any", space=space,
             from_index=from_index, size=size, **filters)
     except fairgraph.errors.AuthenticationError:
         raise AuthenticationError()
@@ -95,7 +95,7 @@ def get_recorded_workflow(workflow_id: UUID, token: HTTPAuthorizationCredentials
     """
     kg_client = get_kg_client_for_user_account(token.credentials)
     try:
-        workflow_object = omcmp.WorkflowExecution.from_uuid(str(workflow_id), kg_client, scope="any")
+        workflow_object = omcmp.WorkflowExecution.from_uuid(str(workflow_id), kg_client, release_status="any")
     except fairgraph.errors.AuthenticationError:
         raise AuthenticationError()
     except TypeError as err:
