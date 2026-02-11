@@ -9,6 +9,7 @@ import requests
 from fastapi import HTTPException, status
 
 from fairgraph.client import KGClient
+from fairgraph.errors import AuthenticationError
 
 from .. import settings
 from . import oauth
@@ -30,7 +31,12 @@ def get_kg_client_for_service_account():
 
 
 def get_kg_client_for_user_account(token):
-    return KGClient(token=token, host=settings.KG_CORE_API_HOST)
+    try:
+        return KGClient(token=token, host=settings.KG_CORE_API_HOST)
+    except AuthenticationError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
 
 
 async def can_read_space(space, token):
