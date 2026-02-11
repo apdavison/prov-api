@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.cors import CORSMiddleware
+from asgi_matomo import MatomoMiddleware
 
 from . import (
     settings,
@@ -34,6 +35,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+if settings.MATOMO_TRACKING_URL and settings.MATOMO_SITE_ID:
+    app.add_middleware(
+        MatomoMiddleware,
+        matomo_url=settings.MATOMO_TRACKING_URL,
+        idsite=settings.MATOMO_SITE_ID
+    )
 
 app.include_router(recipes.router, tags=["Workflow Recipes"])
 app.include_router(workflows.router, tags=["Workflow Executions"])

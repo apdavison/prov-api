@@ -4,3 +4,4 @@ itsdangerous==2.2.0
 Authlib==1.6.5
 httpx==0.28.1
 fairgraph==0.13.2
+asgi-matomo==0.6.1

@@ -4,3 +4,4 @@ itsdangerous
 Authlib
 httpx
 fairgraph
+asgi-matomo
