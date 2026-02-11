@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from asgi_matomo import MatomoMiddleware
 
 from . import (
     settings,
@@ -14,8 +13,9 @@ from . import (
     workflows,
     recipes,
     auth,
-    statistics,
+    statistics
 )
+from .middleware.matomo import MatomoMiddleware
 
 description = """
 This is a first release candidate, more testing is needed before the first release.
