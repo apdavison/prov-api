@@ -1,7 +1,8 @@
 from typing import List, Optional
 from enum import Enum
+import logging
 from uuid import UUID
-from pydantic import AnyHttpUrl, AnyUrl, BaseModel
+from pydantic import AnyHttpUrl, AnyUrl, BaseModel, ValidationError
 
 from fairgraph.utility import as_list
 from fairgraph import IRI
@@ -17,6 +18,8 @@ from ..common.data_models import (
 )
 from ..common.utils import invert_dict, collab_id_from_space
 
+
+logger = logging.getLogger("ebrains-prov-api")
 
 
 class WorkflowRecipeType(str, Enum):
@@ -103,22 +106,26 @@ class WorkflowRecipe(BaseModel):
             repo_obj = recipe_version.repository.resolve(client, release_status="any")
             if repo_obj:
                 location = str(repo_obj.iri)
-        return cls(
-            id=recipe_version.uuid,
-            name=recipe_version.full_name or recipe.full_name,
-            alias=recipe_version.short_name or recipe.short_name,
-            custodians=custodians,
-            description=recipe_version.description or recipe.description,
-            developers=developers,
-            type=type_,
-            full_documentation=recipe_version.full_documentation,
-            homepage=homepage,
-            # keywords=as_list(recipe_version.keywords),  # todo: resolve keyword objects
-            location=location,
-            version_identifier=recipe_version.version_identifier,
-            version_innovation=recipe_version.version_innovation,
-            project_id=collab_id_from_space(recipe_version.space)
-        )
+        try:
+            return cls(
+                id=recipe_version.uuid,
+                name=recipe_version.full_name or recipe.full_name,
+                alias=recipe_version.short_name or recipe.short_name,
+                custodians=custodians,
+                description=recipe_version.description or recipe.description,
+                developers=developers,
+                type=type_,
+                full_documentation=recipe_version.full_documentation,
+                homepage=homepage,
+                # keywords=as_list(recipe_version.keywords),  # todo: resolve keyword objects
+                location=location,
+                version_identifier=recipe_version.version_identifier,
+                version_innovation=recipe_version.version_innovation,
+                project_id=collab_id_from_space(recipe_version.space)
+            )
+        except ValidationError as err:
+            logger.error(err)
+            return None
 
     def to_kg_object(self, client):
         content_type_name = invert_dict(content_type_lookup).get(self.type, None)
