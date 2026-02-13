@@ -41,6 +41,7 @@ if settings.MATOMO_TRACKING_URL and settings.MATOMO_SITE_ID:
         matomo_url=settings.MATOMO_TRACKING_URL,
         idsite=settings.MATOMO_SITE_ID,
         secret=settings.SESSIONS_SECRET_KEY,
+        token_auth=settings.MATOMO_TOKEN_AUTH,
     )
 
 app.include_router(recipes.router, tags=["Workflow Recipes"])

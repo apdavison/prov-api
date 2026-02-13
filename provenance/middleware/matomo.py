@@ -43,11 +43,12 @@ def _extract_visitor_id(auth_header, secret):
 
 class MatomoMiddleware(BaseHTTPMiddleware):
 
-    def __init__(self, app, matomo_url: str, idsite: int, secret: str):
+    def __init__(self, app, matomo_url: str, idsite: int, secret: str, token_auth: str = None):
         super().__init__(app)
         self.tracking_url = f"{matomo_url.rstrip('/')}/matomo.php"
         self.idsite = idsite
         self.secret = secret
+        self.token_auth = token_auth
 
     async def dispatch(self, request: Request, call_next):
         start = time.monotonic()
@@ -81,10 +82,22 @@ class MatomoMiddleware(BaseHTTPMiddleware):
         )
         if visitor_id:
             params["_id"] = visitor_id
+        if self.token_auth:
+            forwarded_for = request.headers.get("x-forwarded-for")
+            if forwarded_for:
+                client_ip = forwarded_for.split(",")[0].strip()
+            else:
+                client_ip = request.client.host if request.client else None
+            if client_ip:
+                params["cip"] = client_ip
+                params["token_auth"] = self.token_auth
 
         try:
             async with httpx.AsyncClient() as client:
-                tracking_response = await client.post(self.tracking_url, params=params)
+                if self.token_auth:
+                    tracking_response = await client.post(self.tracking_url, data=params)
+                else:
+                    tracking_response = await client.post(self.tracking_url, params=params)
             logger.info(
                 "Matomo tracking POST to %s with params %s returned status %s: %s",
                 self.tracking_url,

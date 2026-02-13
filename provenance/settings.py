@@ -14,6 +14,7 @@ KG_CORE_API_HOST = os.environ.get("KG_CORE_API_HOST")
 ADMIN_GROUP_ID = "computation-curators"
 MATOMO_TRACKING_URL = "https://stats.humanbrainproject.eu"
 MATOMO_SITE_ID = 43
+MATOMO_TOKEN_AUTH = os.environ.get("MATOMO_TOKEN_AUTH")
 
 this_dir = os.path.dirname(__file__)
 build_info_path = os.path.join(this_dir, "build_info.json")
