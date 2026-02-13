@@ -24,8 +24,9 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY provenance /code/provenance
 COPY deployment/build_info.json /code/provenance/build_info.json
+COPY log_conf.yaml /code/log_conf.yaml
 
 RUN useradd appuser --uid 1001
 USER appuser
 
-CMD ["uvicorn", "provenance.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "80", "--timeout-keep-alive", "300"]
+CMD ["uvicorn", "provenance.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "80", "--timeout-keep-alive", "300", "--log-config", "/code/log_conf.yaml"]

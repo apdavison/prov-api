@@ -4,3 +4,4 @@ itsdangerous==2.2.0
 Authlib==1.6.7
 httpx==0.28.1
 fairgraph @ git+https://github.com/HumanBrainProject/fairgraph@master
+PyYAML==6.0.3

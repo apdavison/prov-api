@@ -94,10 +94,7 @@ class MatomoMiddleware(BaseHTTPMiddleware):
 
         try:
             async with httpx.AsyncClient() as client:
-                if self.token_auth:
-                    tracking_response = await client.post(self.tracking_url, data=params)
-                else:
-                    tracking_response = await client.post(self.tracking_url, params=params)
+                tracking_response = await client.post(self.tracking_url, params=params)
             logger.info(
                 "Matomo tracking POST to %s with params %s returned status %s: %s",
                 self.tracking_url,
